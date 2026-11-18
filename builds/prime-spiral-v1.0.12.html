@@ -1,0 +1,1380 @@
+<!DOCTYPE html>
+<!--
+  Prime Spiral
+  Copyright (c) 2026 Ben Stiff @ Room46.uk. All rights reserved.
+  No copying, modification, redistribution or rehosting without written permission.
+-->
+<html lang="en" data-build="PS·Ben Stiff @ Room46.uk·1.0.12·2026-11-17·ps-9c41e7">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="app-repo" content="prime-spiral">
+<meta name="app-version" content="1.0.12">
+<title>Prime Spiral</title>
+<style>
+html,body{margin:0;height:100%;background:#000;overflow:hidden;color:#39ff14;font-family:ui-monospace,Menlo,Consolas,monospace;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+canvas{position:fixed;display:block}
+#ui{inset:0;width:100%;height:100%;touch-action:none}
+#line{filter:drop-shadow(0 0 2px rgba(57,255,20,.6))}
+#primes{filter:drop-shadow(0 0 1.5px #39ff14) drop-shadow(0 0 4px rgba(57,255,20,.5))}
+#hud{position:fixed;left:max(12px,env(safe-area-inset-left));top:calc(30px + env(safe-area-inset-top));font-size:12px;line-height:1.55;text-shadow:0 0 6px rgba(57,255,20,.7);display:none;white-space:pre;background:rgba(0,0,0,.5);padding:6px 9px;border-radius:4px;cursor:pointer}
+#hud b{font-weight:600;color:#d6ffcc}
+#hud.mini{opacity:.6;padding:4px 8px}
+#opts{position:fixed;right:max(12px,env(safe-area-inset-right));top:calc(30px + env(safe-area-inset-top));display:flex;flex-direction:column;gap:8px;align-items:flex-end}
+#bar{position:fixed;left:0;right:0;bottom:calc(34px + env(safe-area-inset-bottom));display:flex;flex-direction:column;align-items:center;gap:10px;pointer-events:none}
+#bar .row{pointer-events:auto}
+#zoom{position:fixed;right:max(12px,env(safe-area-inset-right));bottom:calc(34px + env(safe-area-inset-bottom));display:none;gap:6px}
+.row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+button{font:inherit;font-size:13px;color:#39ff14;background:rgba(0,0,0,.72);border:1px solid #39ff14;border-radius:4px;padding:8px 14px;box-shadow:0 0 8px rgba(57,255,20,.35);cursor:pointer}
+button.sel{background:#39ff14;color:#000;font-weight:600}
+button.small{font-size:11px;padding:6px 10px}
+button.off{opacity:.5}
+button:disabled{opacity:.25;box-shadow:none}
+#zoom button{min-width:40px;padding:7px 10px}
+#tw{color:#fff;border-color:#fff;box-shadow:0 0 8px rgba(255,255,255,.35)}
+#tw.off{color:#39ff14;border-color:#39ff14}
+#side{overflow:hidden;position:fixed;left:max(12px,env(safe-area-inset-left));bottom:calc(96px + env(safe-area-inset-bottom));width:min(310px,42vw);max-height:46vh;display:none;flex-direction:column;gap:8px;background:rgba(0,0,0,.78);border:1px solid #00e5ff;border-radius:6px;padding:10px;box-shadow:0 0 12px rgba(0,229,255,.35);font-size:12px;color:#bff8ff}
+#side .t{color:#00e5ff;font-weight:600;font-size:14px}
+#side .row{justify-content:flex-start}
+#side button{color:#00e5ff;border-color:#00e5ff;box-shadow:0 0 8px rgba(0,229,255,.3);font-size:11px;padding:6px 10px}
+#sideList{margin:0;overflow-y:auto;flex:1 1 auto;min-height:0;white-space:pre;font:inherit;color:#d8fbff;line-height:1.45;touch-action:pan-y;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;-webkit-user-select:text;user-select:text}
+#sideList .np{color:rgba(216,251,255,.36)}
+#sideList .tw{color:#fff}
+#mine{touch-action:pan-y;position:fixed;right:calc(max(12px,env(safe-area-inset-right)) + 150px);top:calc(30px + env(safe-area-inset-top));width:min(300px,40vw);max-height:70vh;overflow-y:auto!important;display:none;flex-direction:column;gap:6px;background:rgba(0,0,0,.82);border:1px solid #ff9f1c;border-radius:6px;padding:10px;box-shadow:0 0 12px rgba(255,159,28,.35);font-size:12px;color:#ffe2bd;overflow:hidden}
+#mine .t{color:#ff9f1c;font-weight:600;font-size:14px}
+#mineList{overflow-y:auto;min-height:0;max-height:34vh;flex:0 1 auto;touch-action:pan-y;overscroll-behavior:contain}
+#famList{overflow-y:auto;max-height:20vh;touch-action:pan-y}
+#mineList .it{display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid rgba(255,159,28,.15)}
+#mineList .it span{flex:1}
+#mine button,#mineBtn{color:#ff9f1c;border-color:#ff9f1c;box-shadow:0 0 8px rgba(255,159,28,.3)}
+#mine button{font-size:11px;padding:4px 8px}
+#famBtn,#mine .fam button{color:#b26bff;border-color:#b26bff;box-shadow:0 0 8px rgba(178,107,255,.35)}
+#mine .t2{color:#b26bff;font-weight:600;font-size:13px;margin-top:6px}
+#famList .it span{color:#e2ccff}
+#mine input,#mine select{font:inherit;font-size:11px;width:52px;background:#000;color:#e2ccff;border:1px solid #b26bff;border-radius:3px;padding:3px}
+#mine select{width:44px}
+#mine .fadd{display:flex;gap:4px;align-items:center;flex-wrap:wrap;color:#e2ccff}
+#selFam{color:#b26bff!important;border-color:#b26bff!important}
+#kn{color:#ff2ed2;border-color:#ff2ed2;box-shadow:0 0 8px rgba(255,46,210,.35)}
+#selSave{color:#ff9f1c!important;border-color:#ff9f1c!important}
+#selb.on{background:#00e5ff;color:#000;border-color:#00e5ff}
+#opts{display:none}
+#menuBtn{font-weight:600}
+.tick{pointer-events:auto;align-items:center;gap:8px;font-size:14px;color:#39ff14;cursor:pointer;text-shadow:0 0 6px rgba(57,255,20,.6)}
+.tick input{appearance:none;-webkit-appearance:none;width:20px;height:20px;margin:0;border:1px solid #39ff14;border-radius:3px;background:rgba(0,0,0,.7);box-shadow:0 0 8px rgba(57,255,20,.35);display:grid;place-content:center;cursor:pointer}
+.tick input:checked::after{content:'';width:10px;height:10px;background:#39ff14;border-radius:2px;box-shadow:0 0 6px #39ff14}
+.tick.dis{opacity:.3;pointer-events:none}
+#lock{position:fixed;inset:0;display:none;align-items:center;justify-content:center;text-align:center;padding:24px;background:#000;font-size:15px;line-height:1.6;z-index:9}
+#lock a{color:#d6ffcc}
+</style>
+</head>
+<body>
+<canvas id="line"></canvas>
+<canvas id="primes"></canvas>
+<canvas id="ui"></canvas>
+<div id="hud"></div>
+<div id="opts">
+  <button id="menuBtn" class="small">☰ menu</button>
+  <button id="pr" class="small">primes: on</button>
+  <button id="tw" class="small off">twins: off</button>
+  <button id="ln" class="small">line: on</button>
+  <button id="rev" class="small off">revolve: off</button>
+  <button id="kn" class="small off">known: off</button>
+  <button id="mineBtn" class="small">my lines: 0</button>
+  <button id="famBtn" class="small off">families: off</button>
+</div>
+<div id="zoom"><button id="selb">select line</button><button id="zout">&minus;</button><button id="zfit">fit</button><button id="zin">+</button></div>
+<div id="bar">
+  <div class="row" id="modes">
+    <button data-mode="sacks" class="sel">Spiral</button>
+    <button data-mode="ulam41">41</button>
+    <button data-mode="grid">Grid</button>
+  </div>
+  <label class="row tick" id="revTick"><input type="checkbox" id="revChk"> revolve</label>
+  <div class="row" id="done" style="display:none"><button id="again">Run again</button><button id="save">Save PNG</button></div>
+</div>
+<div id="side"><div class="t" id="sideHead"></div><div id="sideStats"></div><div class="row"><button id="selRun">Run again with line</button><button id="selSave">save to my lines</button><button id="selFam">add family</button><button id="selClear">clear</button></div><pre id="sideList"></pre></div>
+<div id="mine"><div class="t">my lines</div><div style="opacity:.7">hidden or marked with the known button</div><div id="mineList"></div>
+<div class="fam"><div class="t2">families · ak² + bk ± c</div><div style="opacity:.7">c up to max; prime only unless set to any · families button hides / marks them</div><div id="famList"></div>
+<div class="fadd">a<input id="fa" type="number" value="4" min="1">b<input id="fb" type="number" value="4"><select id="fs"><option value="pm">±</option><option value="p">+</option><option value="m">−</option></select>max<input id="fmx" type="number" value="9999" min="1"><button id="fadd">add</button></div></div></div>
+<div id="lock"></div>
+<script>
+'use strict';
+const VERSION = '1.0.12';
+const BUILD = 'PS·Ben Stiff @ Room46.uk·' + VERSION + '·2026-11-17·ps-9c41e7';
+// Domain lock (off while empty). e.g. LOCK_HOST='s77ffy.github.io', HOME_URL='https://s77ffy.github.io/prime-spiral/'
+const LOCK_HOST = '';
+const HOME_URL = '';
+const DURATION = 60000;         // ms the run is stretched over
+const FULL_SPEED_MS = 5000;     // aim for roughly what a flat-out run would reach in this long
+const NMAX = 500000000;         // cap so every prime can be kept (1 bit per odd number, ~31 MB) for zooming back in
+const SPIN_DEG_PER_S = 40;      // revolve speed
+const CREDIT = '© 2026 Ben Stiff @ Room46.uk';
+document.documentElement.dataset.build = BUILD;
+
+function locked() {
+  if (!LOCK_HOST) return false;
+  const h = location.hostname;
+  if (location.protocol === 'file:' || h === 'localhost' || h === '127.0.0.1' || h === LOCK_HOST) return false;
+  const el = document.getElementById('lock');
+  el.style.display = 'flex';
+  el.innerHTML = 'This is an unofficial copy.<br>' + (HOME_URL ? 'Play the real one at <a href="' + HOME_URL + '">' + HOME_URL + '</a>' : '');
+  return true;
+}
+
+if (!locked()) (function () {
+  const lineC = document.getElementById('line'), primeC = document.getElementById('primes'), uiC = document.getElementById('ui');
+  const lctx = lineC.getContext('2d'), pctx = primeC.getContext('2d'), uctx = uiC.getContext('2d');
+  const hudEl = document.getElementById('hud'), doneEl = document.getElementById('done'), barEl = document.getElementById('bar');
+  const zoomEl = document.getElementById('zoom');
+  const twBtn = document.getElementById('tw'), revBtn = document.getElementById('rev');
+  const prBtn = document.getElementById('pr'), lnBtn = document.getElementById('ln');
+  const TAU = Math.PI * 2;
+  const MODE_INFO = {
+    sacks: 'Sacks spiral · Euler’s n²+n+41 curves off to the left',
+    ulam41: 'Ulam square spiral from 41 \u00B7 Euler\u2019s primes run down the diagonal',
+    grid: 'row by row from the top-left · zooms out as it fills'
+  };
+
+  // Base primes for the segmented sieve
+  const SMALLP = new Uint8Array(200001);               // SMALLP[n] = 1 if n is prime (n <= 200000)
+  const BASE = (function (n) {
+    const s = new Uint8Array(n + 1), out = [];
+    for (let i = 2; i <= n; i++) if (!s[i]) { out.push(i); SMALLP[i] = 1; for (let j = i * i; j <= n; j += i) s[j] = 1; }
+    return Int32Array.from(out);
+  })(200000);
+  // Famous prime-generating quadratics that draw as lines (square leading coefficient)
+  const KNOWN = [
+    { a: 1, b: 1, c: 41, name: 'Euler n\u00B2+n+41 (1772)' },
+    { a: 1, b: 1, c: 17, name: 'Legendre n\u00B2+n+17' },
+    { a: 1, b: 1, c: 11, name: 'Euler lucky number n\u00B2+n+11' },
+    { a: 1, b: 1, c: 5, name: 'Euler lucky number n\u00B2+n+5' },
+    { a: 1, b: 1, c: 3, name: 'Euler lucky number n\u00B2+n+3' },
+    { a: 1, b: 0, c: 1, name: 'Landau\u2019s n\u00B2+1' },
+    { a: 36, b: -810, c: 2753, name: 'Fung & Ruby 36n\u00B2\u2212810n+2753' }
+  ];
+  const SEGMAX = 1 << 20;
+  const seg = new Uint8Array(SEGMAX);
+  const bits = new Uint8Array((NMAX >> 4) + 64);   // bit i <=> odd number 2i+1 is prime
+
+  let cw, ch, k, W, H, R, B, c;
+  let VW, VH, vox, voy, cssL = 0, cssT = 0;
+  let buf, twD, twL, euB, tmp, rIdx, img, img32, lut, lut2, lutL;
+  let G, GD, GL, cols, rows, cs, per, cells;
+  let mode = 'sacks', revolve = false, showTwins = false, showPrimes = true, showLine = true, hudMini = false;
+  let s, s0, N, count, largest, lastPrime, twins, euler, target, goal, t0, pausedAt = 0, lastT = 0, lastEl = 0, spin = 0, state = 'idle';
+  let lineT = 0, lineDirty = false, lineVisible = false;
+  let UX = 0, UY = 0;
+  let sv = 1, wcx = 0, wcy = 0;                     // zoom view: pixels per world unit, world centre
+  let knownMode = 'off', curves = [], knownCount = 0, mineCount = 0, myB, tmp16, accMy;
+  const MINE_KEY = 'primeSpiral.myLines', FAM_KEY = 'primeSpiral.families';
+  let famMode = 'off', famCount = 0, famB, accF, famJob = 0;
+  let fams = (() => { try { const a = JSON.parse(localStorage.getItem(FAM_KEY) || 'null'); if (Array.isArray(a)) return a.filter(o => o && o.a > 0); } catch (_) {} return [
+    { a: 4, b: 4, sign: 'pm', max: 9999, prime: true },
+    { a: 1, b: 1, sign: 'pm', max: 9999, prime: true },
+    { a: 16, b: 30, sign: 'pm', max: 9999, prime: true }]; })();
+  function saveFams() { try { localStorage.setItem(FAM_KEY, JSON.stringify(fams)); } catch (_) {} }
+  let myLines = (() => { try { const a = JSON.parse(localStorage.getItem(MINE_KEY) || '[]'); return Array.isArray(a) ? a.filter(o => o && o.a > 0) : []; } catch (_) { return []; } })();
+  function saveMine() { try { localStorage.setItem(MINE_KEY, JSON.stringify(myLines)); } catch (_) {} }
+  let sel = null, selCurve = null, selL, accSel, selStep = 0, selMarks = [], selCands = [], selList = [], selShown = 0;
+  let selPrimes = 0, selVals = 0, selExp = 0, uiMsg = '', uiMsgT = 0;
+  const sideEl = document.getElementById('side'), sideHead = document.getElementById('sideHead'), sideStats = document.getElementById('sideStats'), sideList = document.getElementById('sideList');
+  const selBtn = document.getElementById('selb'), knBtn = document.getElementById('kn');
+  const famBtn = document.getElementById('famBtn'), famList = document.getElementById('famList'), selFamBtn = document.getElementById('selFam');
+  const mineBtn = document.getElementById('mineBtn'), mineEl = document.getElementById('mine'), mineList = document.getElementById('mineList'), selSaveBtn = document.getElementById('selSave');
+
+  function setup() {
+    const dpr = window.devicePixelRatio || 1;
+    cw = innerWidth; ch = innerHeight;
+    k = Math.min(dpr, 2);
+    if (cw * ch * k * k > 1.8e6) k = Math.sqrt(1.8e6 / (cw * ch));
+    W = Math.round(cw * k); H = Math.round(ch * k);
+    uiC.width = W; uiC.height = H;
+    R = Math.sqrt(W * W + H * H) / 2;
+    B = Math.ceil(2 * R) + 8; c = B >> 1;
+    buf = new Float32Array(B * B); twD = new Float32Array(B * B); twL = new Float32Array(B * B); tmp = new Float32Array(B * B);
+    euB = new Uint16Array(B * B); selL = new Uint16Array(B * B); myB = new Uint16Array(B * B); famB = new Uint16Array(B * B); tmp16 = new Uint16Array(B * B);   // whole-prime count layers
+    const D = Math.ceil(2 * R) + 2, GS = Math.max(W * H, D * D);
+    G = new Float32Array(GS); GD = new Float32Array(GS); GL = new Float32Array(GS);   // also reused as zoom accumulators
+    accSel = new Float32Array(GS); accMy = new Uint16Array(GS); accF = new Uint16Array(GS);
+    const L = Math.ceil(R * 1.5) + 8;
+    lut = new Float32Array(L); lut2 = new Float32Array(L); lutL = new Float32Array(L);
+    setView();
+  }
+
+  function revolving() { return revolve && mode !== 'grid'; }
+
+  function setView() {
+    const rev = revolving();
+    if (rev) { VW = VH = Math.ceil(2 * R) + 2; } else { VW = W; VH = H; }
+    vox = c - (VW >> 1); voy = c - (VH >> 1);
+    cssL = (cw - VW / k) / 2; cssT = (ch - VH / k) / 2;
+    for (const cv of [lineC, primeC]) {
+      cv.width = VW; cv.height = VH;
+      cv.style.width = (VW / k) + 'px'; cv.style.height = (VH / k) + 'px';
+      cv.style.left = cssL + 'px'; cv.style.top = cssT + 'px';
+      cv.style.transformOrigin = ((c - vox) / k) + 'px ' + ((c - voy) / k) + 'px';
+      cv.style.transform = rev ? 'rotate(' + spin + 'deg)' : 'none';
+    }
+    rIdx = new Uint16Array(VW * VH);
+    const cx = c - vox, cy = c - voy;
+    for (let y = 0; y < VH; y++) for (let x = 0; x < VW; x++) rIdx[y * VW + x] = Math.round(Math.hypot(x - cx, y - cy));
+    img = pctx.createImageData(VW, VH); img32 = new Uint32Array(img.data.buffer);
+    lineDirty = true;
+  }
+
+  function ulam(n) {
+    const q = Math.ceil((Math.sqrt(n) - 1) / 2);
+    let t = 2 * q + 1, m = t * t; t -= 1;
+    if (n >= m - t) { UX = q - (m - n); UY = -q; return; }
+    m -= t; if (n >= m - t) { UX = -q; UY = -q + (m - n); return; }
+    m -= t; if (n >= m - t) { UX = -q + (m - n); UY = q; return; }
+    UX = q; UY = q - (m - n - t);
+  }
+
+  function stampFor(scale) { return (mode === 'ulam41' && scale >= 3) ? Math.max(1, Math.floor(scale * 0.72)) : 1; }
+
+  function isP(n) {
+    if (n === 2) return true;
+    if (n < 3 || (n & 1) === 0 || n >= N) return false;
+    const i = (n - 1) >> 1;
+    return (bits[i >> 3] >> (i & 7)) & 1;
+  }
+
+  function reset() {
+    buf.fill(0); twD.fill(0); twL.fill(0); euB.fill(0); selL.fill(0); myB.fill(0); famB.fill(0); G.fill(0); GD.fill(0); GL.fill(0); bits.fill(0);
+    N = 3; count = 1; largest = 2; lastPrime = 2; twins = 0; euler = 0; knownCount = 0; mineCount = 0; famCount = 0; famJob++;
+    curves = KNOWN.map(o => makeCurve(o, false)).concat(myLines.map(o => makeCurve(o, false, true)));
+    selCurve = sel ? makeCurve(sel, true) : null;
+    selList = []; selShown = 0; selPrimes = 0; selVals = 0; selExp = 0; sideList.textContent = '';
+    if (mode === 'grid') {
+      cols = Math.max(1, Math.floor(W / (12 * k))); cs = W / cols; rows = Math.floor(H / cs); cells = cols * rows; per = 1;
+      G[1] += 1;
+    } else if (mode === 'sacks') {
+      s = s0 = 5 * k;
+      const t = Math.SQRT2, a = TAU * t; buf[((c + s * t * Math.sin(a)) | 0) * B + ((c + s * t * Math.cos(a)) | 0)] += 1;
+    } else {
+      s = s0 = 6 * k;
+    }
+    sv = s || 1; wcx = wcy = 0;
+    lctx.clearRect(0, 0, VW, VH); pctx.clearRect(0, 0, VW, VH);
+    lineT = 0; lineDirty = false; lineVisible = false;
+  }
+
+  function fold(src) {
+    const small = src instanceof Uint16Array, dst = small ? tmp16 : tmp;
+    dst.fill(0);
+    const q = (B >> 2) + 2;
+    for (let y = c - q; y <= c + q; y++) {
+      const sy = c + 2 * (y - c); if (sy < 0 || sy + 1 >= B) continue;
+      const row = y * B, r0 = sy * B, r1 = r0 + B;
+      for (let x = c - q; x <= c + q; x++) {
+        const sx = c + 2 * (x - c); if (sx < 0 || sx + 1 >= B) continue;
+        dst[row + x] = src[r0 + sx] + src[r0 + sx + 1] + src[r1 + sx] + src[r1 + sx + 1];
+      }
+    }
+    if (small) tmp16 = src; else tmp = src;
+    return dst;
+  }
+  function zoomOut() { buf = fold(buf); twD = fold(twD); twL = fold(twL); euB = fold(euB); selL = fold(selL); myB = fold(myB); famB = fold(famB); s /= 2; sv = s; lineDirty = true; }
+
+  function growGrid() {
+    if (cols * 2 <= W) { cols *= 2; cs = W / cols; rows = Math.floor(H / cs); cells = cols * rows; }
+    else {
+      per *= 2;
+      const half = Math.ceil(cells / 2);
+      for (const A of [G, GD, GL]) {
+        for (let j = 0; j < half; j++) A[j] = A[2 * j] + (2 * j + 1 < cells ? A[2 * j + 1] : 0);
+        A.fill(0, half, cells);
+      }
+    }
+  }
+
+  function linkSteps() {
+    if (mode === 'sacks') return Math.max(1, Math.ceil(TAU * s * 1.2));
+    return 2 * Math.max(1, Math.ceil(s));
+  }
+
+  function twin(p) {
+    twins++;
+    if (mode === 'sacks') {
+      const t1 = Math.sqrt(p), t2 = Math.sqrt(p + 2), steps = linkSteps();
+      for (let j = 0; j <= steps; j++) {
+        const t = t1 + (t2 - t1) * j / steps, a = TAU * t, r = s * t;
+        const idx = ((c + r * Math.sin(a)) | 0) * B + ((c + r * Math.cos(a)) | 0);
+        if (j === 0 || j === steps) twD[idx] += 1; else twL[idx] += 1 / steps;
+      }
+    } else if (mode === 'ulam41') {
+      if (p < 41) return;
+      ulam(p - 40); const x0 = c + s * UX, y0 = c + s * UY;
+      ulam(p - 39); const x1 = c + s * UX, y1 = c + s * UY;
+      ulam(p - 38); const x2 = c + s * UX, y2 = c + s * UY;
+      twD[(y0 | 0) * B + (x0 | 0)] += 1; twD[(y2 | 0) * B + (x2 | 0)] += 1;
+      const st = Math.max(1, Math.ceil(s)), inv = 1 / (2 * st);
+      for (let j = 1; j < st; j++) { const f = j / st; twL[((y0 + (y1 - y0) * f) | 0) * B + ((x0 + (x1 - x0) * f) | 0)] += inv; }
+      for (let j = 0; j < st; j++) { const f = j / st; twL[((y1 + (y2 - y1) * f) | 0) * B + ((x1 + (x2 - x1) * f) | 0)] += inv; }
+    } else {
+      GD[Math.floor((p - 1) / per)] += 1;
+      GD[Math.floor((p + 1) / per)] += 1;
+      GL[Math.floor(p / per)] += 1;
+    }
+  }
+
+  // Sieve m odd numbers from N; plot every prime into the live picture and record it in the bit store.
+  function chunk(m) {
+    const lo = N, hi = lo + 2 * m;
+    if (mode === 'grid') { while (Math.floor((hi - 1) / per) >= cells) growGrid(); }
+    else if (mode === 'sacks') { while (s * Math.sqrt(hi) > c - 4) zoomOut(); }
+    else { while (s * (Math.sqrt(Math.max(1, hi - 40)) / 2 + 2) > c - 4) zoomOut(); }
+    seg.fill(0, 0, m);
+    for (let bi = 1; bi < BASE.length; bi++) {
+      const p = BASE[bi], pp = p * p;
+      if (pp >= hi) break;
+      let st = pp >= lo ? pp : Math.ceil(lo / p) * p;
+      if (st % 2 === 0) st += p;
+      for (let j = (st - lo) / 2; j < m; j += p) seg[j] = 1;
+    }
+    const bl = bits.length << 3;
+    let cnt = 0, last = 0, lp = lastPrime;
+    const i0 = (lo - 1) / 2, famOn = fams.length > 0;
+    if (mode === 'sacks') {
+      const ss = s, C = c, BB = B, b = buf;
+      for (let i = 0; i < m; i++) if (seg[i] === 0) {
+        const n = lo + 2 * i, t = Math.sqrt(n), a = TAU * t, r = ss * t;
+        const pi = ((C + r * Math.sin(a)) | 0) * BB + ((C + r * Math.cos(a)) | 0);
+        b[pi] += 1;
+        if (famOn && famHit(n)) { famCount++; famB[pi] += 1; }
+        const ii = i0 + i; if (ii < bl) bits[ii >>> 3] |= 1 << (ii & 7);
+        if (n - lp === 2) twin(lp);
+        lp = n; cnt++; last = n;
+      }
+    } else if (mode === 'ulam41') {
+      const ss = s, C = c, BB = B;
+      for (let i = 0; i < m; i++) if (seg[i] === 0) {
+        const n = lo + 2 * i;
+        if (n >= 41) {
+          ulam(n - 40);
+          const idx = ((C + ss * UY) | 0) * BB + ((C + ss * UX) | 0);
+          buf[idx] += 1;
+          if (famOn && famHit(n)) { famCount++; famB[idx] += 1; }
+        }
+        const ii = i0 + i; if (ii < bl) bits[ii >>> 3] |= 1 << (ii & 7);
+        if (n - lp === 2) twin(lp);
+        lp = n; cnt++; last = n;
+      }
+    } else {
+      const P = per;
+      for (let i = 0; i < m; i++) if (seg[i] === 0) {
+        const n = lo + 2 * i;
+        G[Math.floor((n - 1) / P)] += 1;
+        const ii = i0 + i; if (ii < bl) bits[ii >>> 3] |= 1 << (ii & 7);
+        if (n - lp === 2) twin(lp);
+        lp = n; cnt++; last = n;
+      }
+    }
+    lastPrime = lp;
+    count += cnt; if (cnt) largest = last; N = hi;
+  }
+
+  // ---- quadratic curves n = a k^2 + b k + c ----
+  function canon(a, b, c) { const j = -Math.floor(b / (2 * a)); return { a, b: b + 2 * a * j, c: a * j * j + b * j + c }; }
+  function makeCurve(o, isSel, mine) {
+    const q = canon(o.a, o.b, o.c), k0 = Math.ceil(-q.b / (2 * q.a));
+    return { a: q.a, b: q.b, c: q.c, name: o.name || '', isSel, mine: !!mine, both: (q.b % q.a) !== 0, k0, kUp: k0, kDown: k0 - 1 };
+  }
+  function polyText(a, b, c) {
+    let s1 = (a === 1 ? '' : a) + 'k\u00B2';
+    if (b) s1 += (b > 0 ? ' + ' : ' \u2212 ') + (Math.abs(b) === 1 ? '' : Math.abs(b)) + 'k';
+    if (c) s1 += (c > 0 ? ' + ' : ' \u2212 ') + Math.abs(c);
+    return s1;
+  }
+  function knownMatch(cv) { for (const o of KNOWN) { const q = canon(o.a, o.b, o.c); if (q.a === cv.a && q.b === cv.b && q.c === cv.c) return o.name; } return ''; }
+  function forCurve(cv, fn) {
+    for (let kk = cv.k0; ; kk++) { const v = cv.a * kk * kk + cv.b * kk + cv.c; if (v >= N) break; if (v > 1) fn(v, kk); }
+    if (cv.both) for (let kk = cv.k0 - 1; ; kk--) { const v = cv.a * kk * kk + cv.b * kk + cv.c; if (v >= N) break; if (v > 1) fn(v, kk); }
+  }
+  function depositAt(v, layer) {
+    if (mode === 'sacks') { const t = Math.sqrt(v), a = TAU * t, r = s * t; layer[((c + r * Math.sin(a)) | 0) * B + ((c + r * Math.cos(a)) | 0)] += 1; }
+    else if (mode === 'ulam41' && v >= 41) { ulam(v - 40); layer[((c + s * UY) | 0) * B + ((c + s * UX) | 0)] += 1; }
+  }
+  function curveHit(cv, v, kk) {
+    if (cv.isSel) {
+      selVals++; selExp += 1 / Math.log(Math.max(3, v));
+      const pr = isP(v);
+      if (pr) { selPrimes++; depositAt(v, selL); }
+      selList.push(kk, v, pr ? 1 : 0);
+    } else if (isP(v)) { if (cv.mine) { mineCount++; depositAt(v, myB); } else { knownCount++; depositAt(v, euB); } }
+  }
+  function feedCurve(cv) {
+    if (mode === 'grid') return;
+    for (;;) { const kk = cv.kUp, v = cv.a * kk * kk + cv.b * kk + cv.c; if (v >= N) break; cv.kUp++; if (v > 1) curveHit(cv, v, kk); }
+    if (cv.both) for (;;) { const kk = cv.kDown, v = cv.a * kk * kk + cv.b * kk + cv.c; if (v >= N) break; cv.kDown--; if (v > 1) curveHit(cv, v, kk); }
+  }
+  function feedAll() { for (const cv of curves) feedCurve(cv); if (selCurve) feedCurve(selCurve); }
+  // ---- families: n = a k^2 + b k + c, c within ±max (prime |c| unless 'any'), any integer k ----
+  function famTest(F, cc) {
+    if (cc === 0) return false;
+    const p = cc < 0 ? -cc : cc;
+    if (p > F.max) return false;
+    if (cc > 0 ? F.sign === 'm' : F.sign === 'p') return false;
+    return F.prime ? p <= 200000 && SMALLP[p] === 1 : true;
+  }
+  function famHit(n) {
+    for (let i = 0; i < fams.length; i++) {
+      const F = fams[i], a = F.a, b = F.b, M = F.max, a2 = 2 * a;
+      const D = b * b + 4 * a * (n + M); if (D < 0) continue;
+      const sD = Math.sqrt(D), Dl = b * b + 4 * a * (n - M), sl = Dl > 0 ? Math.sqrt(Dl) : 0;
+      for (let kk = Math.ceil((-b + sl) / a2 - 1e-9), k2 = Math.floor((-b + sD) / a2 + 1e-9); kk <= k2; kk++) if (famTest(F, n - a * kk * kk - b * kk)) return true;
+      for (let kk = Math.ceil((-b - sD) / a2 - 1e-9), k2 = Math.floor((-b - sl) / a2 + 1e-9); kk <= k2; kk++) if (famTest(F, n - a * kk * kk - b * kk)) return true;
+    }
+    return false;
+  }
+  // which family (if any) a whole curve belongs to
+  function curveFamily(cv) {
+    for (const F of fams) {
+      if (F.a !== cv.a) continue;
+      const j = (F.b - cv.b) / (2 * cv.a);
+      if (!Number.isInteger(j)) continue;
+      if (famTest(F, cv.a * j * j + cv.b * j + cv.c)) return F;
+    }
+    return null;
+  }
+  function famText(F) { return polyText(F.a, F.b, 0) + ' ' + (F.sign === 'p' ? '+' : F.sign === 'm' ? '\u2212' : '\u00B1') + ' ' + (F.prime ? 'p' : 'c') + ' \u2264 ' + F.max; }
+  // rebuild the violet layer from the stored primes, in slices so the page stays responsive
+  function rebuildFams() {
+    const job = ++famJob;
+    famB.fill(0); famCount = 0;
+    renderFamList();
+    if (state === 'idle' || mode === 'grid' || !fams.length) { if (state !== 'idle') renderView(false); return; }
+    let n0 = 3;
+    const end = N;
+    const step = () => {
+      if (job !== famJob) return;
+      const n1 = Math.min(end, n0 + 4e6);
+      scan(n0, n1 - 1, n => { if (famHit(n)) { famCount++; depositAt(n, famB); } });
+      n0 = n1;
+      if (n0 < end) { flash('updating families\u2026 ' + Math.round(100 * n0 / end) + '%'); setTimeout(step, 0); }
+      else { flash('families updated'); renderView(false); }
+    };
+    step();
+  }
+
+  function ulamIndex(x, y) {
+    const q = Math.max(Math.abs(x), Math.abs(y)); if (q === 0) return 1;
+    const sq = (2 * q - 1) * (2 * q - 1);
+    if (x === q && y > -q) return sq + (y + q);
+    if (y === q) return sq + 2 * q + (q - x);
+    if (x === -q) return sq + 4 * q + (q - y);
+    return sq + 6 * q + (x + q);
+  }
+  function nearPrimes(wx, wy, tol) {
+    const out = [], seen = new Set();
+    if (mode === 'sacks') {
+      const r = Math.hypot(wx, wy); let ph = Math.atan2(wy, wx) / TAU; ph -= Math.floor(ph);
+      const w = Math.ceil(tol / Math.PI) + 2;
+      for (let kk = Math.max(0, Math.floor(r - tol) - 1); kk <= Math.ceil(r + tol) + 1; kk++) {
+        const n0 = Math.round((kk + ph) * (kk + ph));
+        for (let n = n0 - w; n <= n0 + w; n++) {
+          if (seen.has(n) || !isP(n)) continue; seen.add(n);
+          const t = Math.sqrt(n), d = Math.hypot(t * Math.cos(TAU * t) - wx, t * Math.sin(TAU * t) - wy);
+          if (d <= tol) out.push([d, n]);
+        }
+      }
+    } else {
+      const R0 = Math.ceil(tol);
+      for (let y = Math.round(wy) - R0; y <= Math.round(wy) + R0; y++) for (let x = Math.round(wx) - R0; x <= Math.round(wx) + R0; x++) {
+        const d = Math.hypot(x - wx, y - wy); if (d > tol) continue;
+        const v = ulamIndex(x, y) + 40; if (isP(v)) out.push([d, v]);
+      }
+    }
+    out.sort((p, q) => p[0] - q[0]);
+    return out.slice(0, 12);                          // [distance, prime] pairs, nearest first
+  }
+  function scoreCurve(a, b, c2, k1, k2) {
+    const span = k2 - k1 - 1, step = Math.max(1, Math.floor(span / 4000));
+    let pr = 0, vals = 0, ex = 0;
+    for (let kk = k1 + 1; kk < k2; kk += step) { const v = a * kk * kk + b * kk + c2; if (v < 2 || v >= N) continue; vals++; ex += 1 / Math.log(Math.max(3, v)); if (isP(v)) pr++; }
+    return { score: (pr + 1) / (ex + 1), pr, vals };
+  }
+  function fitCurve(C1, C2) {
+    const AS = [1, 4, 9, 16, 25, 36], CMAX = 200000;
+    let best = null;
+    for (const [da, pa] of C1) for (const [db, pb] of C2) {
+      if (pa === pb) continue;
+      const near = 1 / (1 + (da + db) / 1.5);            // strongly prefer the primes you actually tapped
+      const p1 = Math.min(pa, pb), p2 = Math.max(pa, pb);
+      for (const a of AS) for (let b = 0; b < 2 * a; b++) {
+        const kc = (-b + Math.sqrt(b * b + 4 * a * p1)) / (2 * a), span = CMAX / (2 * Math.sqrt(a * p1)) + 1;
+        for (let k1 = Math.max(0, Math.ceil(kc - span)); k1 <= kc + span; k1++) {
+          const c2 = p1 - a * k1 * k1 - b * k1; if (Math.abs(c2) > CMAX) continue;
+          const disc = b * b - 4 * a * (c2 - p2); if (disc < 0) continue;
+          const sq = Math.round(Math.sqrt(disc)); if (sq * sq !== disc) continue;
+          const num = -b + sq; if (num % (2 * a) !== 0) continue;
+          const k2 = num / (2 * a); if (k2 <= k1 + 1) continue;
+          const sc = scoreCurve(a, b, c2, k1, k2);
+          const score = near * sc.score / (1 + 0.15 * (Math.sqrt(a) - 1));   // dense visible bands come from small a
+          if (!best || score > best.score) best = { a, b, c: c2, k1, k2, score };
+        }
+      }
+    }
+    return best;
+  }
+
+  function lineAlphaAt(scale) { const q = scale / k; return 0.5 * Math.min(1, Math.max(0, (q - (mode === 'ulam41' ? 1.5 : 1)) / 2.5)); }
+
+  // Live guide line (fit view), drawn incrementally
+  function updateLine() {
+    if (mode === 'grid') { if (lineVisible || lineDirty) { lctx.clearRect(0, 0, VW, VH); lineVisible = false; lineDirty = false; } return; }
+    if (lineDirty) { lctx.clearRect(0, 0, VW, VH); lineT = 0; lineDirty = false; }
+    const la = lineAlphaAt(s);
+    const end = mode === 'sacks' ? Math.sqrt(N) : Math.max(0, N - 41);
+    if (la <= 0) { if (lineVisible) { lctx.clearRect(0, 0, VW, VH); lineVisible = false; } lineT = end; return; }
+    lineVisible = true;
+    if (end <= lineT) return;
+    const cx = c - vox, cy = c - voy;
+    lctx.strokeStyle = 'rgba(57,255,20,' + la + ')';
+    lctx.lineWidth = 0.6 * k; lctx.lineJoin = 'round';
+    lctx.beginPath();
+    if (mode === 'sacks') {
+      let t = lineT;
+      lctx.moveTo(cx + s * t * Math.cos(TAU * t), cy + s * t * Math.sin(TAU * t));
+      while (t < end) {
+        t += Math.min(0.05, 2.5 / (s * Math.sqrt(1 + (TAU * t) * (TAU * t))));
+        if (t > end) t = end;
+        lctx.lineTo(cx + s * t * Math.cos(TAU * t), cy + s * t * Math.sin(TAU * t));
+      }
+    } else {
+      let i = Math.max(1, Math.floor(lineT));
+      ulam(i); lctx.moveTo(cx + s * UX, cy + s * UY);
+      for (i = i + 1; i <= end; i++) { ulam(i); lctx.lineTo(cx + s * UX, cy + s * UY); }
+    }
+    lctx.stroke();
+    lineT = end;
+  }
+
+  function pack(r, g, b, a) { return ((a | 0) << 24) | ((b | 0) << 16) | ((g | 0) << 8) | (r | 0); }
+
+  // One pixel's colour: green primes (dark green for Euler), white twins blended over.
+  function shade(v, dd, l, e, my, fm, sl, L1, L2, LL, steps) {
+    if (sl !== 0) return pack(40, 232, 255, 255);
+    if (knownMode === 'hide' && (e !== 0 || my !== 0)) { v -= e + my; if (v < 0) v = 0; }
+    if (famMode === 'hide' && fm !== 0) { v -= fm; if (v < 0) v = 0; }
+    let wd = 0;
+    if (showTwins && (dd !== 0 || l !== 0)) {
+      let ad = dd * L2; if (ad > 1) ad = 1;
+      let al = l * steps * 0.5 * LL; if (al > 0.5) al = 0.5;
+      wd = (ad > al ? ad : al) * 0.85;
+    }
+    if (!showPrimes) return wd === 0 ? 0 : pack(255, 255, 255, wd * 255);
+    if (v === 0 && wd === 0) return 0;
+    let a = v * L1; if (a > 1) a = 1;
+    const g = a * a * 130;
+    let r0 = 57 + g, g0 = 255, b0 = 20 + g;
+    if (knownMode === 'mark' && v !== 0) {
+      let fk = 0;
+      if (e !== 0) { const f = e >= v ? 1 : e / v; fk = f; r0 += (255 - r0) * f; g0 += (46 - g0) * f; b0 += (210 - b0) * f; }       // famous: neon pink
+      if (my !== 0) { const f = my >= v ? 1 : my / v; if (f > fk) fk = f; r0 += (255 - r0) * f; g0 += (159 - g0) * f; b0 += (28 - b0) * f; }    // mine: neon orange
+      const am = 0.2 + 0.8 * fk; if (a < am) a = am;                                                                    // marked primes glow at full strength
+    }
+    if (famMode === 'mark' && v !== 0 && fm !== 0) {
+      const f = fm >= v ? 1 : fm / v; r0 += (178 - r0) * f; g0 += (107 - g0) * f; b0 += (255 - b0) * f;                  // families: neon violet
+      const am = 0.2 + 0.8 * f; if (a < am) a = am;
+    }
+    const A = (a > wd ? a : wd) * 255;
+    return pack(r0 + (255 - r0) * wd, g0 + (255 - g0) * wd, b0 + (255 - b0) * wd, A);
+  }
+
+  function fillLut() {
+    const sacks = mode === 'sacks';
+    const inv = sacks ? 1 / (Math.PI * s * s) : 1 / (s * s);
+    for (let r = 0; r < lut.length; r++) {
+      const q = r / s, n = sacks ? q * q : 4 * q * q + 41, ln = Math.max(1, Math.log(n));
+      lut[r] = 1 / Math.max(1, 4 * inv / ln);
+      const tx = 6 * inv * 1.32 / (ln * ln);
+      lut2[r] = 1 / Math.max(1, tx);
+      lutL[r] = 1 / Math.max(1, tx);
+    }
+  }
+
+  // Live picture at fit (the stored, ever-zooming-out buffer)
+  function renderCentre() {
+    fillLut();
+    const d = stampFor(s), stamp = d > 1, hd = d / 2, steps = linkSteps();
+    for (let y = 0; y < VH; y++) {
+      const by = y + voy, brow = by * B + vox, prow = y * VW;
+      let rowIn = true, rowBase = 0;
+      if (stamp) { const py0 = c + s * Math.round((by - c) / s); rowIn = Math.abs(by + 0.5 - py0) <= hd; rowBase = (py0 | 0) * B; }
+      for (let x = 0; x < VW; x++) {
+        const bi = brow + x;
+        let si = bi;
+        if (stamp) {
+          if (!rowIn) si = -1;
+          else { const bx = x + vox, px0 = c + s * Math.round((bx - c) / s); si = Math.abs(bx + 0.5 - px0) <= hd ? rowBase + (px0 | 0) : -1; }
+        }
+        const l = twL[bi];
+        if (si < 0 && l === 0) { img32[prow + x] = 0; continue; }
+        const ri = rIdx[prow + x];
+        img32[prow + x] = si < 0 ? shade(0, 0, l, 0, 0, 0, 0, 1, lut2[ri], lutL[ri], steps)
+          : shade(buf[si], twD[si], l, euB[si], myB[si], famB[si], selL[si], lut[ri], lut2[ri], lutL[ri], steps);
+      }
+    }
+    pctx.putImageData(img, 0, 0);
+  }
+
+  // Quick zoom preview: sample the live buffer through the zoom view (blocky but instant)
+  function renderAggView() {
+    fillLut();
+    const cx0 = c - vox, cy0 = c - voy, steps = linkSteps();
+    const dV = stampFor(sv), hdV = dV > 1 ? dV / (2 * sv) : 0;
+    for (let y = 0; y < VH; y++) {
+      const prow = y * VW;
+      let wy = (y - cy0) / sv + wcy, rowOK = true;
+      if (hdV) { const ry = Math.round(wy); rowOK = Math.abs(wy - ry) <= hdV; wy = ry; }
+      const by = Math.floor(c + wy * s);
+      for (let x = 0; x < VW; x++) {
+        let wx = (x - cx0) / sv + wcx;
+        if (hdV) { if (!rowOK) { img32[prow + x] = 0; continue; } const rx = Math.round(wx); if (Math.abs(wx - rx) > hdV) { img32[prow + x] = 0; continue; } wx = rx; }
+        const bx = Math.floor(c + wx * s);
+        if (bx < 0 || by < 0 || bx >= B || by >= B) { img32[prow + x] = 0; continue; }
+        const bi = by * B + bx, v = buf[bi], dd = twD[bi], l = twL[bi], sl = selL[bi];
+        if (v === 0 && dd === 0 && l === 0 && sl === 0) { img32[prow + x] = 0; continue; }
+        let ri = Math.round(Math.hypot(wx, wy) * s); if (ri >= lut.length) ri = lut.length - 1;
+        img32[prow + x] = shade(v, dd, l, euB[bi], myB[bi], famB[bi], sl, lut[ri], lut2[ri], lutL[ri], steps);
+      }
+    }
+    pctx.putImageData(img, 0, 0);
+  }
+
+  // ---- full-detail zoom render, rebuilt from the stored primes ----
+  function scan(nA, nB, fn) {
+    if (nA < 3) nA = 3; if (nB > N - 1) nB = N - 1; if (nA > nB) return;
+    let i = (nA - 1) >> 1; if (2 * i + 1 < nA) i++;
+    const iB = (nB - 1) >> 1;
+    while (i <= iB) {
+      const byte = bits[i >> 3];
+      if (byte === 0) { i = (i | 7) + 1; continue; }
+      if ((byte >> (i & 7)) & 1) fn(2 * i + 1);
+      i++;
+    }
+  }
+
+  // Number ranges on the Sacks spiral that can fall inside a world-space rectangle
+  function sacksRanges(wx0, wy0, wx1, wy1, cb) {
+    const tN = Math.sqrt(N);
+    let rmax = 0;
+    for (const X of [wx0, wx1]) for (const Y of [wy0, wy1]) rmax = Math.max(rmax, Math.hypot(X, Y));
+    const rmin = Math.hypot(Math.max(wx0, Math.min(0, wx1)), Math.max(wy0, Math.min(0, wy1)));
+    if (rmin > tN) return;
+    const hi = Math.min(rmax, tN);
+    if (rmin < 3) { cb(0, Math.ceil(hi * hi) + 1); return; }
+    const ang = Math.atan2((wy0 + wy1) / 2, (wx0 + wx1) / 2);
+    let dmin = Infinity, dmax = -Infinity;
+    for (const X of [wx0, wx1]) for (const Y of [wy0, wy1]) {
+      let dl = Math.atan2(Y, X) - ang;
+      while (dl > Math.PI) dl -= TAU; while (dl < -Math.PI) dl += TAU;
+      if (dl < dmin) dmin = dl; if (dl > dmax) dmax = dl;
+    }
+    let f0 = (ang + dmin) / TAU; f0 -= Math.floor(f0);
+    const span = (dmax - dmin) / TAU;
+    for (let kk = Math.floor(rmin) - 1; kk <= Math.ceil(hi); kk++) {
+      let tA = kk + f0, tB = tA + span;
+      if (tA < rmin) tA = rmin; if (tB > hi) tB = hi;
+      if (tB < tA) continue;
+      cb(Math.floor(tA * tA), Math.ceil(tB * tB));
+    }
+  }
+
+  // Ulam cells inside a world rectangle, walked ring by ring, side by side (each side is a straight run)
+  function ulamSides(wx0, wy0, wx1, wy1, cb) {
+    const X0 = Math.ceil(wx0 - 0.5), X1 = Math.floor(wx1 + 0.5), Y0 = Math.ceil(wy0 - 0.5), Y1 = Math.floor(wy1 + 0.5);
+    const nIdx = N - 1 - 40; if (nIdx < 1) return;
+    const qData = Math.ceil((Math.sqrt(nIdx) - 1) / 2) + 1;
+    const dx = X0 > 0 ? X0 : (X1 < 0 ? -X1 : 0), dy = Y0 > 0 ? Y0 : (Y1 < 0 ? -Y1 : 0);
+    const qmin = Math.max(dx, dy), qmax = Math.min(qData, Math.max(-X0, X1, -Y0, Y1));
+    if (qmin === 0 && X0 <= 0 && X1 >= 0 && Y0 <= 0 && Y1 >= 0) cb(1, 1, 1, 0, 0, 0, 0);
+    for (let q = Math.max(1, qmin); q <= qmax; q++) {
+      const sq = (2 * q - 1) * (2 * q - 1);
+      for (let j = 0; j < 4; j++) {
+        const nA = sq + 1 + 2 * q * j, nB = nA + 2 * q - 1;
+        ulam(nA); const ax = UX, ay = UY; ulam(nB);
+        const ddx = Math.sign(UX - ax), ddy = Math.sign(UY - ay);
+        let lo = nA, hi = nB;
+        if (ddx === 0) {
+          if (ax < X0 || ax > X1) continue;
+          const a1 = nA + ddy * (Y0 - ay), a2 = nA + ddy * (Y1 - ay);
+          lo = Math.max(lo, Math.min(a1, a2)); hi = Math.min(hi, Math.max(a1, a2));
+        } else {
+          if (ay < Y0 || ay > Y1) continue;
+          const a1 = nA + ddx * (X0 - ax), a2 = nA + ddx * (X1 - ax);
+          lo = Math.max(lo, Math.min(a1, a2)); hi = Math.min(hi, Math.max(a1, a2));
+        }
+        if (lo <= hi) cb(lo, hi, nA, ax, ay, ddx, ddy);
+      }
+    }
+  }
+
+  function viewRect() {
+    const cx0 = c - vox, cy0 = c - voy;
+    return [(0 - cx0) / sv + wcx, (0 - cy0) / sv + wcy, (VW - cx0) / sv + wcx, (VH - cy0) / sv + wcy];
+  }
+
+  function renderBits() {
+    const acc = tmp, accT = G, accL = GD, accE = GL, accS = accSel, NP = VW * VH;
+    acc.fill(0, 0, NP); accT.fill(0, 0, NP); accL.fill(0, 0, NP); accE.fill(0, 0, NP); accS.fill(0, 0, NP); accMy.fill(0, 0, NP); accF.fill(0, 0, NP);
+    const famPts = [], famOn = fams.length > 0 && famMode !== 'off';
+    const cx0 = c - vox, cy0 = c - voy, sacks = mode === 'sacks';
+    const [wx0, wy0, wx1, wy1] = viewRect();
+    const d = mode === 'sacks' ? (sv >= 8 * k ? 3 : sv >= 3 * k ? 2 : 1) : stampFor(sv), links = sv >= 1.5;
+    const put = (A, X, Y) => {
+      if (d === 1) { const xi = Math.floor(X), yi = Math.floor(Y); if (xi >= 0 && yi >= 0 && xi < VW && yi < VH) A[yi * VW + xi] += 1; return; }
+      const x0 = Math.floor(X - d / 2 + 0.5), y0 = Math.floor(Y - d / 2 + 0.5);
+      for (let yy = Math.max(0, y0); yy < Math.min(VH, y0 + d); yy++) for (let xx = Math.max(0, x0); xx < Math.min(VW, x0 + d); xx++) A[yy * VW + xx] += 1;
+    };
+    const dot = (A, X, Y) => { const xi = Math.floor(X), yi = Math.floor(Y); if (xi >= 0 && yi >= 0 && xi < VW && yi < VH) A[yi * VW + xi] += 1; };
+    if (sacks) {
+      const stepsL = Math.max(2, Math.ceil(TAU * sv));
+      sacksRanges(wx0, wy0, wx1, wy1, (nA, nB) => scan(nA, nB, n => {
+        const t = Math.sqrt(n), a = TAU * t;
+        const X = cx0 + (t * Math.cos(a) - wcx) * sv, Y = cy0 + (t * Math.sin(a) - wcy) * sv;
+        if (X < -4 || Y < -4 || X > VW + 4 || Y > VH + 4) return;
+        put(acc, X, Y);
+        if (famOn && famHit(n)) famPts.push(X, Y);
+        const up = isP(n + 2);
+        if (up || isP(n - 2)) put(accT, X, Y);
+        if (links && up) {
+          const t2 = Math.sqrt(n + 2);
+          for (let j = 1; j < stepsL; j++) { const tt = t + (t2 - t) * j / stepsL, aa = TAU * tt; dot(accL, cx0 + (tt * Math.cos(aa) - wcx) * sv, cy0 + (tt * Math.sin(aa) - wcy) * sv); }
+        }
+      }));
+    } else {
+      const stepsL = Math.max(2, Math.ceil(sv));
+      ulamSides(wx0, wy0, wx1, wy1, (lo, hi, nA, ax, ay, ddx, ddy) => scan(lo + 40, hi + 40, v => {
+        const off = v - 40 - nA, gx = ax + ddx * off, gy = ay + ddy * off;
+        const X = cx0 + (gx - wcx) * sv, Y = cy0 + (gy - wcy) * sv;
+        put(acc, X, Y);
+        if (famOn && famHit(v)) famPts.push(X, Y);
+        const up = isP(v + 2);
+        if (up || isP(v - 2)) put(accT, X, Y);
+        if (links && up) {
+          ulam(v - 39); const X1 = cx0 + (UX - wcx) * sv, Y1 = cy0 + (UY - wcy) * sv;
+          ulam(v - 38); const X2 = cx0 + (UX - wcx) * sv, Y2 = cy0 + (UY - wcy) * sv;
+          for (let j = 1; j < stepsL; j++) { const f = j / stepsL; dot(accL, X + (X1 - X) * f, Y + (Y1 - Y) * f); }
+          for (let j = 0; j < stepsL; j++) { const f = j / stepsL; dot(accL, X1 + (X2 - X1) * f, Y1 + (Y2 - Y1) * f); }
+        }
+      }));
+    }
+    const posOf = v => {
+      if (sacks) { const t = Math.sqrt(v), a = TAU * t; return [cx0 + (t * Math.cos(a) - wcx) * sv, cy0 + (t * Math.sin(a) - wcy) * sv]; }
+      if (v < 41) return null; ulam(v - 40); return [cx0 + (UX - wcx) * sv, cy0 + (UY - wcy) * sv];
+    };
+    // marked / selected primes drawn as slightly bigger dots so the lines stand out
+    const dBig = sacks ? d + 2 : d;
+    const putBig = (A, X, Y) => {
+      const x0 = Math.floor(X - dBig / 2 + 0.5), y0 = Math.floor(Y - dBig / 2 + 0.5);
+      for (let yy = Math.max(0, y0); yy < Math.min(VH, y0 + dBig); yy++) for (let xx = Math.max(0, x0); xx < Math.min(VW, x0 + dBig); xx++) { const i = yy * VW + xx; A[i] += 1; if (acc[i] === 0) acc[i] = 1; }
+    };
+    const curveLayer = (cv, A) => forCurve(cv, v => { if (!isP(v)) return; const p = posOf(v); if (p && p[0] > -4 && p[1] > -4 && p[0] < VW + 4 && p[1] < VH + 4) putBig(A, p[0], p[1]); });
+    if (knownMode !== 'off') for (const cv of curves) curveLayer(cv, cv.mine ? accMy : accE);
+    if (selCurve) curveLayer(selCurve, accS);
+    for (let i = 0; i < famPts.length; i += 2) putBig(accF, famPts[i], famPts[i + 1]);
+    const npp = sacks ? 1 / (Math.PI * sv * sv) : 1 / (sv * sv);
+    for (let y = 0; y < VH; y++) {
+      const wy = (y - cy0) / sv + wcy, prow = y * VW;
+      for (let x = 0; x < VW; x++) {
+        const i = prow + x, v = acc[i], dd = accT[i], l = accL[i], sl = accS[i];
+        if (v === 0 && dd === 0 && l === 0 && sl === 0) { img32[i] = 0; continue; }
+        const wx = (x - cx0) / sv + wcx;
+        const nn = sacks ? wx * wx + wy * wy : 4 * Math.max(wx * wx, wy * wy) + 41;
+        const ln = Math.max(1, Math.log(nn)), tx = 6 * npp * 1.32 / (ln * ln);
+        img32[i] = shade(v, dd, l, accE[i], accMy[i], accF[i], sl, 1 / Math.max(1, 4 * npp / ln), 1 / Math.max(1, tx), 1, 1);
+      }
+    }
+    pctx.putImageData(img, 0, 0);
+  }
+
+  function drawZoomLine() {
+    lctx.clearRect(0, 0, VW, VH);
+    const la = lineAlphaAt(sv);
+    if (la <= 0 || mode === 'grid') return;
+    const cx0 = c - vox, cy0 = c - voy;
+    const P = (wx, wy) => [cx0 + (wx - wcx) * sv, cy0 + (wy - wcy) * sv];
+    const [wx0, wy0, wx1, wy1] = viewRect();
+    lctx.strokeStyle = 'rgba(57,255,20,' + la + ')';
+    lctx.lineWidth = 0.6 * k; lctx.lineJoin = 'round';
+    lctx.beginPath();
+    if (mode === 'sacks') {
+      const tN = Math.sqrt(N);
+      sacksRanges(wx0, wy0, wx1, wy1, (nA, nB) => {
+        let t = Math.sqrt(Math.max(0, nA)); const tB = Math.min(tN, Math.sqrt(nB));
+        if (tB <= t) return;
+        let p = P(t * Math.cos(TAU * t), t * Math.sin(TAU * t)); lctx.moveTo(p[0], p[1]);
+        while (t < tB) {
+          t += Math.min(0.05, 2.5 / (sv * Math.sqrt(1 + (TAU * t) * (TAU * t)))); if (t > tB) t = tB;
+          p = P(t * Math.cos(TAU * t), t * Math.sin(TAU * t)); lctx.lineTo(p[0], p[1]);
+        }
+      });
+    } else {
+      const nIdx = N - 1 - 40;
+      const X0 = Math.ceil(wx0 - 0.5), X1 = Math.floor(wx1 + 0.5), Y0 = Math.ceil(wy0 - 0.5), Y1 = Math.floor(wy1 + 0.5);
+      const dx = X0 > 0 ? X0 : (X1 < 0 ? -X1 : 0), dy = Y0 > 0 ? Y0 : (Y1 < 0 ? -Y1 : 0);
+      const qmax = Math.min(Math.ceil((Math.sqrt(Math.max(1, nIdx)) - 1) / 2) + 1, Math.max(-X0, X1, -Y0, Y1));
+      for (let q = Math.max(1, Math.max(dx, dy)); q <= qmax; q++) {
+        const sq = (2 * q - 1) * (2 * q - 1);
+        const idx = [sq, sq + 1, sq + 2 * q, sq + 2 * q + 1, sq + 4 * q, sq + 4 * q + 1, sq + 6 * q, sq + 6 * q + 1, sq + 8 * q];
+        let first = true;
+        for (const n0 of idx) {
+          const n = Math.min(n0, nIdx); if (n < 1) continue;
+          ulam(n); const p = P(UX, UY);
+          if (first) { lctx.moveTo(p[0], p[1]); first = false; } else lctx.lineTo(p[0], p[1]);
+          if (n0 >= nIdx) break;
+        }
+      }
+    }
+    lctx.stroke();
+  }
+
+  function isZoomed() { return mode !== 'grid' && (sv > s * 1.001 || wcx !== 0 || wcy !== 0); }
+
+  function renderView(preview) {
+    if (mode === 'grid') { renderGrid(); return; }
+    if (!isZoomed()) { renderCentre(); lineDirty = true; updateLine(); }
+    else { if (preview || sv < s * 2) renderAggView(); else renderBits(); drawZoomLine(); }   // full rebuild only once it adds detail
+    hud(lastEl); updateSide(); if (selMarks.length || selStep) drawUI();
+  }
+
+  function renderGrid() {
+    const gap = cs >= 4, thin = Math.max(0.5, 0.4 * k);
+    const reached = Math.floor((N - 2) / per);
+    const colOf = new Int32Array(W);
+    for (let x = 0; x < W; x++) colOf[x] = Math.min(cols - 1, Math.floor(x / cs));
+    const faint = pack(57, 255, 20, 20);
+    for (let y = 0; y < H; y++) {
+      const prow = y * W, row = Math.floor(y / cs);
+      if (row >= rows) { img32.fill(0, prow, prow + W); continue; }
+      const yIn = y - row * cs, rowJ = row * cols;
+      const midRow = Math.abs(yIn + 0.5 - cs / 2) <= thin;
+      const n0 = Math.max(3, (rowJ + cols / 2) * per), ln = Math.log(n0);
+      const norm = 1 / Math.max(1, 4 * per / ln), norm2 = 1 / Math.max(1, 6 * per * 1.32 / (ln * ln));
+      const yGap = gap && yIn < 1;
+      for (let x = 0; x < W; x++) {
+        const col = colOf[x], j = rowJ + col;
+        if (yGap || (gap && x - col * cs < 1) || j > reached) { img32[prow + x] = 0; continue; }
+        const v = G[j];
+        let wd = 0;
+        if (showTwins) {
+          const dd = GD[j], l = GL[j];
+          if (dd !== 0 || l !== 0) {
+            let ad = dd * norm2; if (ad > 1) ad = 1;
+            let al = 0;
+            if (l !== 0) { if (per === 1 && cs >= 3) al = midRow ? 1 : 0; else { al = l * norm2 * 0.6; if (al > 0.6) al = 0.6; } }
+            if (per === 1 && cs >= 3 && dd !== 0) ad = 1;
+            wd = (ad > al ? ad : al) * (per === 1 ? 1 : 0.85);
+          }
+        }
+        if (!showPrimes) { img32[prow + x] = wd === 0 ? ((per === 1 && gap) ? faint : 0) : pack(255, 255, 255, wd * 255); continue; }
+        if (v === 0 && wd === 0) { img32[prow + x] = (per === 1 && gap) ? faint : 0; continue; }
+        let a = v * norm; if (a > 1) a = 1;
+        const g = a * a * 130, r0 = 57 + g, b0 = 20 + g;
+        const A = (a > wd ? a : wd) * 255;
+        img32[prow + x] = pack(r0 + (255 - r0) * wd, 255, b0 + (255 - b0) * wd, A);
+      }
+    }
+    pctx.putImageData(img, 0, 0);
+  }
+
+  function render() { if (mode === 'grid') renderGrid(); else renderCentre(); }
+
+  const fmt = n => Math.round(n).toLocaleString('en-GB');
+  function hud(el) {
+    lastEl = el;
+    if (hudMini) { hudEl.innerHTML = 'stats ▸'; return; }
+    const checked = N - 1;
+    let h =
+      'checked  <b>' + fmt(checked) + '</b>\n' +
+      'primes   <b>' + fmt(count) + '</b>\n' +
+      'twins    <b style="color:#fff">' + fmt(twins) + '</b> pairs\n';
+    if (mode !== 'grid' && knownMode !== 'off') h += 'known    <b style="color:#ff2ed2">' + fmt(knownCount) + '</b> famous' + (myLines.length ? ' \u00B7 <b style="color:#ff9f1c">' + fmt(mineCount) + '</b> mine' : '') + (knownMode === 'hide' ? ' (hidden)' : '') + '\n';
+    if (mode !== 'grid' && fams.length && famMode !== 'off') h += 'families <b style="color:#b26bff">' + fmt(famCount) + '</b> primes' + (famMode === 'hide' ? ' (hidden)' : '') + '\n';
+    if (selCurve && mode !== 'grid') h += 'line     <b style="color:#00e5ff">' + fmt(selPrimes) + '</b> primes of ' + fmt(selVals) + '\n';
+    if (mode === 'grid') h += 'cell     <b>' + fmt(per) + '</b> number' + (per > 1 ? 's' : '') + '\n';
+    h += 'largest  <b>' + fmt(largest) + '</b>\n' +
+      'aiming   <b>~' + fmt(goal) + '</b>' + (goal < target ? ' (zoom cap)' : '') + '\n' +
+      'time     <b>' + (el / 1000).toFixed(1) + ' s</b> / ' + (DURATION / 1000).toFixed(0) + ' s';
+    if (isZoomed()) h += '\nzoom     <b>×' + (sv / s).toFixed(1) + '</b>';
+    hudEl.innerHTML = h;
+  }
+
+  function drawUI() {
+    uctx.clearRect(0, 0, W, H);
+    uctx.textBaseline = 'alphabetic';
+    const F = px => Math.round(px * k) + 'px ui-monospace,Menlo,Consolas,monospace';
+    if (state === 'idle') {
+      uctx.textAlign = 'center';
+      uctx.shadowColor = '#39ff14'; uctx.shadowBlur = 14 * k;
+      uctx.fillStyle = '#39ff14';
+      uctx.font = '600 ' + Math.round(Math.min(W / 9, 44 * k)) + 'px ui-monospace,Menlo,Consolas,monospace';
+      uctx.fillText('PRIME SPIRAL', W / 2, H * 0.4);
+      uctx.shadowBlur = 6 * k;
+      uctx.font = F(14);
+      uctx.fillText('tap to hunt primes for 60 seconds', W / 2, H * 0.4 + 34 * k);
+      uctx.globalAlpha = 0.6;
+      uctx.font = F(11);
+      uctx.fillText(MODE_INFO[mode], W / 2, H * 0.4 + 56 * k);
+      uctx.fillText('tap to pause · pinch, drag or scroll to zoom while paused', W / 2, H * 0.4 + 74 * k);
+      uctx.globalAlpha = 1; uctx.shadowBlur = 0;
+      uctx.fillStyle = 'rgba(57,255,20,.6)';
+      uctx.font = F(10);
+      uctx.textAlign = 'left'; uctx.fillText(CREDIT, 10 * k, H - 10 * k);
+    } else {
+      uctx.textAlign = 'center';
+      uctx.fillStyle = 'rgba(57,255,20,.32)';
+      uctx.font = F(10);
+      uctx.fillText(CREDIT, W / 2, 16 * k);
+      if (state === 'paused') {
+        uctx.shadowColor = '#39ff14'; uctx.shadowBlur = 10 * k;
+        uctx.fillStyle = '#39ff14';
+        uctx.font = '600 ' + F(15);
+        uctx.fillText('PAUSED', W / 2, H - 52 * k);
+        uctx.shadowBlur = 0;
+        uctx.fillStyle = 'rgba(57,255,20,.7)';
+        uctx.font = F(10);
+        uctx.fillText(mode === 'grid' ? 'tap to resume' : 'tap to resume · pinch / drag / scroll to zoom', W / 2, H - 36 * k);
+      }
+    }
+    if (state !== 'idle') {
+      uctx.textAlign = 'center';
+      const msg = uiMsg && performance.now() < uiMsgT ? uiMsg : (selStep === 1 ? 'SELECT: tap a prime at the START of a line (zoom in close)' : selStep === 2 ? 'now tap a prime at the END \u2014 you can zoom and pan first' : '');
+      if (msg) {
+        uctx.font = '600 ' + F(13);
+        const w = uctx.measureText(msg).width + 24 * k;
+        uctx.fillStyle = 'rgba(0,0,0,.75)'; uctx.fillRect(W / 2 - w / 2, 28 * k, w, 26 * k);
+        uctx.fillStyle = '#00e5ff'; uctx.fillText(msg, W / 2, 46 * k);
+      }
+      for (const m of selMarks) {
+        const p = fromCanvas(c - vox + (m[0] - wcx) * sv, c - voy + (m[1] - wcy) * sv);
+        uctx.strokeStyle = '#00e5ff'; uctx.lineWidth = 2 * k;
+        uctx.beginPath(); uctx.arc(p[0] * k, p[1] * k, 9 * k, 0, TAU); uctx.stroke();
+      }
+    }
+    uctx.textAlign = 'right';
+    uctx.fillStyle = 'rgba(57,255,20,.45)';
+    uctx.font = F(10);
+    uctx.fillText('v' + VERSION, W - 10 * k, H - 10 * k);
+  }
+  function flash(m) { uiMsg = m; uiMsgT = performance.now() + 2500; drawUI(); setTimeout(drawUI, 2600); }
+
+  function updateSide() {
+    if (!selCurve || mode === 'grid') { sideEl.style.display = 'none'; return; }
+    if (state === 'idle') return;
+    sideEl.style.display = 'flex';
+    const kn = knownMatch(selCurve), mi = mineIndex(selCurve) >= 0, fam = curveFamily(selCurve);
+    selFamBtn.disabled = !!fam;
+    selSaveBtn.textContent = mi ? 'remove from my lines' : 'save to my lines';
+    selSaveBtn.disabled = !!kn;
+    sideHead.textContent = 'n = ' + polyText(selCurve.a, selCurve.b, selCurve.c);
+    const rich = selExp > 0 ? (selPrimes / selExp) : 0;
+    sideStats.innerHTML = (kn ? '<b>' + kn + '</b> \u00B7 already known<br>' : mi ? '<b style="color:#ff9f1c">in my lines</b><br>' : 'not one of the famous lines<br>') +
+      fmt(selPrimes) + ' primes of ' + fmt(selVals) + ' values (' + (selVals ? (100 * selPrimes / selVals).toFixed(1) : '0') + '%)<br>' +
+      '\u00D7' + rich.toFixed(1) + ' richer than random numbers this size' +
+      (fam ? '<br><span style="color:#b26bff">in family ' + famText(fam) + '</span>' : '');
+    if (selShown < selList.length) {
+      let out = '';
+      const lim = Math.min(selList.length, selShown + 3 * 4000);
+      for (let i = selShown; i < lim; i += 3) {
+        const kk = selList[i], v = selList[i + 1];
+        if (selList[i + 2]) out += '<span>k=' + kk + '\t' + fmt(v) + ((isP(v - 2) || isP(v + 2)) ? '  <span class="tw">twin</span>' : '') + '</span>\n';
+        else out += '<span class="np">k=' + kk + '\t' + fmt(v) + ' = ' + factorText(v) + '</span>\n';
+      }
+      selShown = lim;
+      sideList.insertAdjacentHTML('beforeend', out);
+      if (selShown < selList.length && state !== 'run') requestAnimationFrame(updateSide);   // keep filling while paused / finished
+    }
+  }
+  function mineIndex(cv) { return myLines.findIndex(o => { const q = canon(o.a, o.b, o.c); return q.a === cv.a && q.b === cv.b && q.c === cv.c; }); }
+  // rebuild the orange layer after my lines change
+  function rebuildMine() {
+    curves = curves.filter(cv => !cv.mine).concat(myLines.map(o => makeCurve(o, false, true)));
+    myB.fill(0); mineCount = 0;
+    if (state !== 'idle') for (const cv of curves) if (cv.mine) feedCurve(cv);
+    renderMineList();
+    if (state !== 'idle') renderView(false);
+  }
+  function renderMineList() {
+    mineBtn.textContent = 'my lines: ' + myLines.length;
+    mineList.innerHTML = myLines.length ? '' : '<div style="opacity:.6;padding:6px 0">none yet \u2014 select a line and tap \u201Csave to my lines\u201D</div>';
+    myLines.forEach((o, i) => {
+      const q = canon(o.a, o.b, o.c), row = document.createElement('div'); row.className = 'it';
+      row.innerHTML = '<span>' + polyText(q.a, q.b, q.c) + (o.rich ? ' \u00B7 \u00D7' + o.rich : '') + '</span>';
+      const vb = document.createElement('button'); vb.textContent = 'view';
+      vb.onclick = () => { if (state === 'idle' || mode === 'grid') return; applySelection(q); };
+      const xb = document.createElement('button'); xb.textContent = '\u00D7';
+      xb.onclick = () => { myLines.splice(i, 1); saveMine(); rebuildMine(); updateSide(); };
+      row.appendChild(vb); row.appendChild(xb); mineList.appendChild(row);
+    });
+  }
+  function renderFamList() {
+    famList.innerHTML = fams.length ? '' : '<div style="opacity:.6;padding:6px 0">no families</div>';
+    fams.forEach((F, i) => {
+      const row = document.createElement('div'); row.className = 'it';
+      row.innerHTML = '<span>' + famText(F) + '</span>';
+      const sb = document.createElement('button'); sb.textContent = F.sign === 'p' ? '+' : F.sign === 'm' ? '\u2212' : '\u00B1';
+      sb.title = 'sign of the constant'; sb.onclick = () => { F.sign = F.sign === 'pm' ? 'p' : F.sign === 'p' ? 'm' : 'pm'; saveFams(); rebuildFams(); };
+      const pb = document.createElement('button'); pb.textContent = F.prime ? 'prime' : 'any';
+      pb.onclick = () => { F.prime = !F.prime; saveFams(); rebuildFams(); };
+      const xb = document.createElement('button'); xb.textContent = '\u00D7';
+      xb.onclick = () => { fams.splice(i, 1); saveFams(); rebuildFams(); };
+      row.appendChild(sb); row.appendChild(pb); row.appendChild(xb); famList.appendChild(row);
+    });
+    famBtn.textContent = 'families: ' + famMode + (fams.length ? '' : ' (0)');
+  }
+  function addFamily(a, b, sign, max) {
+    a = Math.round(a); b = Math.round(b); max = Math.max(1, Math.min(200000, Math.round(max) || 9999));
+    if (!(a > 0)) return;
+    if (fams.some(F => F.a === a && F.b === b && F.sign === sign && F.max === max)) { flash('that family is already in the list'); return; }
+    fams.push({ a, b, sign, max, prime: true }); saveFams(); rebuildFams(); updateSide();
+  }
+  // e.g. 1681 -> "41²", 2021 -> "43 × 47"
+  function factorText(n) {
+    const SUP = ['', '', '\u00B2', '\u00B3', '\u2074', '\u2075', '\u2076', '\u2077', '\u2078', '\u2079'];
+    const out = []; let m = n;
+    for (let i = 0; i < BASE.length; i++) {
+      const p = BASE[i]; if (p * p > m) break;
+      if (m % p === 0) { let e = 0; while (m % p === 0) { m /= p; e++; } out.push(p + (e < SUP.length ? SUP[e] : '^' + e)); }
+    }
+    if (m > 1) out.push(String(m));
+    return out.join(' \u00D7 ');
+  }
+  function applySelection(f) {
+    sel = { a: f.a, b: f.b, c: f.c };
+    selCurve = makeCurve(sel, true);
+    selL.fill(0); selList = []; selShown = 0; selPrimes = 0; selVals = 0; selExp = 0; sideList.textContent = '';
+    feedCurve(selCurve);
+    setBars(); renderView(false);
+  }
+  function clearSelection() {
+    sel = null; selCurve = null; selStep = 0; selMarks = []; selCands = [];
+    selL.fill(0); sideEl.style.display = 'none';
+    setBars(); if (state !== 'idle') renderView(false); drawUI();
+  }
+  function selectTap(px, py) {
+    const [cx, cy] = toCanvas(px, py);
+    const wx = (cx - (c - vox)) / sv + wcx, wy = (cy - (c - voy)) / sv + wcy;
+    if (sv / k < 1.5) { flash('zoom in until the spiral\u2019s turns separate (about \u00D7' + Math.ceil(1.5 * k / s) + ') to pick a line'); return; }
+    const tol = Math.min(30, Math.max(1.2, 14 * k / sv));
+    const C = nearPrimes(wx, wy, tol);
+    if (!C.length) { flash('no prime there \u2014 tap right on a dot'); return; }
+    const pn = C[0][1];                                    // ring goes on the prime that was picked
+    if (mode === 'sacks') { const t = Math.sqrt(pn); selMarks.push([t * Math.cos(TAU * t), t * Math.sin(TAU * t)]); }
+    else { ulam(pn - 40); selMarks.push([UX, UY]); }
+    selCands.push(C);
+    if (selStep === 1) { selStep = 2; setBars(); drawUI(); return; }
+    selStep = 0; setBars();
+    const f = fitCurve(selCands[0], selCands[1]); selCands = [];
+    if (!f) { selMarks = []; flash('no line found through those points \u2014 try points further apart'); return; }
+    applySelection(f);
+    flash('line found: n = ' + polyText(selCurve.a, selCurve.b, selCurve.c));
+  }
+
+  function applySpin() {
+    if (!revolving()) return;
+    const t = 'rotate(' + spin.toFixed(2) + 'deg)';
+    lineC.style.transform = t; primeC.style.transform = t;
+  }
+
+  function frame() {
+    if (state !== 'run') return;
+    const now = performance.now();
+    const dt = (now - lastT) / 1000; lastT = now;
+    if (now - t0 >= DURATION) { finish(); return; }
+    const u = (now - t0) / DURATION;
+    const want = Math.min(goal, mode === 'grid' ? 3 * Math.pow(goal / 3, u) : 3 + goal * u * u);
+    const end = now + 11;
+    while (N < want && performance.now() < end) {
+      const m = Math.min(SEGMAX, Math.max(16, Math.ceil((want - N) / 2)));
+      chunk(m);
+    }
+    feedAll();
+    if (revolving()) { spin = (spin + SPIN_DEG_PER_S * Math.min(dt, 0.1)) % 360; applySpin(); }
+    updateLine(); render(); hud(performance.now() - t0); updateSide();
+    requestAnimationFrame(frame);
+  }
+
+  function calibrate() {
+    const keepMode = mode;
+    mode = 'sacks'; reset();
+    N = 50000001;
+    s = (c - 10) / Math.sqrt(N + 4e8);
+    const tb = performance.now(); let done = 0;
+    while (performance.now() - tb < 300) { chunk(1 << 18); done += 2 << 18; }
+    const rate = done / (performance.now() - tb);
+    mode = keepMode;
+    return Math.max(1e6, Math.round(rate * FULL_SPEED_MS * 0.75));
+  }
+
+  function canZoom() { return (state === 'paused' || state === 'done') && mode !== 'grid'; }
+
+  function setBars() {
+    barEl.style.display = (state === 'idle' || state === 'done') ? 'flex' : 'none';
+    optsEl.style.display = state === 'idle' ? 'none' : 'flex';
+    revTick.style.display = state === 'idle' ? 'flex' : 'none';
+    revTick.classList.toggle('dis', mode === 'grid');
+    revChk.checked = revolve && mode !== 'grid';
+    if (state === 'idle') mineEl.style.display = 'none';
+    doneEl.style.display = state === 'done' ? 'flex' : 'none';
+    zoomEl.style.display = canZoom() ? 'flex' : 'none';
+    for (const b of document.querySelectorAll('#modes button')) b.classList.toggle('sel', b.dataset.mode === mode);
+    revBtn.disabled = mode === 'grid';
+    lnBtn.disabled = mode === 'grid';
+    knBtn.disabled = mode === 'grid';
+    mineBtn.disabled = mode === 'grid';
+    famBtn.disabled = mode === 'grid';
+    selBtn.classList.toggle('on', selStep > 0);
+    sideEl.style.display = (selCurve && mode !== 'grid' && state !== 'idle') ? 'flex' : 'none';
+    revBtn.textContent = 'revolve: ' + (revolve ? 'on' : 'off');
+    revBtn.classList.toggle('off', !revolve);
+  }
+
+  function fitView() { sv = s; wcx = wcy = 0; }
+
+  function start() {
+    target = calibrate();
+    goal = Math.min(target, NMAX);
+    spin = 0; setView();
+    selStep = 0; selMarks = []; selCands = [];
+    reset();
+    state = 'run';
+    hudEl.style.display = 'block';
+    setBars(); drawUI();
+    t0 = lastT = performance.now();
+    requestAnimationFrame(frame);
+  }
+
+  function togglePause() {
+    if (state === 'run') { state = 'paused'; pausedAt = performance.now(); setBars(); drawUI(); }
+    else if (state === 'paused') {
+      const now = performance.now();
+      t0 += now - pausedAt; lastT = now;
+      if (isZoomed()) { fitView(); lineDirty = true; }
+      selStep = 0; selMarks = []; selCands = [];
+      state = 'run'; setBars(); drawUI();
+      requestAnimationFrame(frame);
+    }
+  }
+
+  function finish() {
+    state = 'done';
+    feedAll();
+    updateLine(); render(); hud(DURATION); updateSide();
+    setBars(); drawUI();
+  }
+
+  function goIdle() {
+    state = 'idle'; spin = 0;
+    clearTimeout(settleTimer); famJob++;
+    selStep = 0; selMarks = []; selCands = [];
+    hudEl.style.display = 'none';
+    setView(); reset();
+    setBars(); drawUI();
+  }
+
+  function save() {
+    const cv = document.createElement('canvas'); cv.width = VW; cv.height = VH;
+    const x = cv.getContext('2d');
+    x.fillStyle = '#000'; x.fillRect(0, 0, VW, VH);
+    if (showLine) x.drawImage(lineC, 0, 0);
+    x.globalCompositeOperation = 'lighter';
+    if ('filter' in x) { x.filter = 'blur(' + (3 * k) + 'px)'; x.drawImage(primeC, 0, 0); x.filter = 'none'; }
+    x.drawImage(primeC, 0, 0);
+    x.globalCompositeOperation = 'source-over';
+    x.fillStyle = 'rgba(57,255,20,.85)';
+    x.font = Math.round(12 * k) + 'px ui-monospace,Menlo,Consolas,monospace';
+    x.textAlign = 'left';
+    x.fillText(fmt(count) + ' primes below ' + fmt(N), 12 * k, 22 * k);
+    x.fillStyle = 'rgba(57,255,20,.5)';
+    x.font = Math.round(10 * k) + 'px ui-monospace,Menlo,Consolas,monospace';
+    x.fillText(CREDIT, 12 * k, VH - 12 * k);
+    x.textAlign = 'right'; x.fillText('v' + VERSION, VW - 12 * k, VH - 12 * k);
+    cv.toBlob(b => {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(b); a.download = 'prime-spiral-' + mode + '-' + count + '.png';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    }, 'image/png');
+  }
+
+  // ---- zoom view control ----
+  // screen (CSS px) -> drawing-canvas pixel, undoing the canvas position and any revolve rotation
+  function toCanvas(px, py) {
+    const ox = (c - vox) / k, oy = (c - voy) / k;
+    let qx = px - (cssL + ox), qy = py - (cssT + oy);
+    if (revolving()) { const a = -spin * Math.PI / 180, ca = Math.cos(a), sa = Math.sin(a); const rx = qx * ca - qy * sa; qy = qx * sa + qy * ca; qx = rx; }
+    return [(ox + qx) * k, (oy + qy) * k];
+  }
+  function fromCanvas(x, y) {
+    const ox = (c - vox) / k, oy = (c - voy) / k;
+    let qx = x / k - ox, qy = y / k - oy;
+    if (revolving()) { const a = spin * Math.PI / 180, ca = Math.cos(a), sa = Math.sin(a); const rx = qx * ca - qy * sa; qy = qx * sa + qy * ca; qx = rx; }
+    return [cssL + ox + qx, cssT + oy + qy];
+  }
+  function dirToCanvas(dx, dy) {
+    if (revolving()) { const a = -spin * Math.PI / 180, ca = Math.cos(a), sa = Math.sin(a); const rx = dx * ca - dy * sa; dy = dx * sa + dy * ca; dx = rx; }
+    return [dx * k, dy * k];
+  }
+  function svMax() { return s0 * 2; }
+  function clampView() {
+    if (sv <= s * 1.001) { sv = s; wcx = wcy = 0; return; }
+    const ext = mode === 'sacks' ? Math.sqrt(N) : Math.sqrt(Math.max(1, N - 40)) / 2 + 1;
+    wcx = Math.max(-ext, Math.min(ext, wcx)); wcy = Math.max(-ext, Math.min(ext, wcy));
+  }
+  function zoomAt(cx, cy, f) {
+    const cx0 = c - vox, cy0 = c - voy;
+    const wx = (cx - cx0) / sv + wcx, wy = (cy - cy0) / sv + wcy;
+    sv = Math.max(s, Math.min(svMax(), sv * f));
+    wcx = wx - (cx - cx0) / sv; wcy = wy - (cy - cy0) / sv;
+    clampView();
+  }
+  function panBy(dxC, dyC) { if (sv <= s * 1.001) return; wcx -= dxC / sv; wcy -= dyC / sv; clampView(); }
+
+  let previewPending = false, settleTimer = 0;
+  function requestRender() {
+    if (!previewPending) { previewPending = true; requestAnimationFrame(() => { previewPending = false; renderView(true); }); }
+    clearTimeout(settleTimer);
+    const settle = () => { if (pts.size > 0) { settleTimer = setTimeout(settle, 120); return; } renderView(false); };
+    settleTimer = setTimeout(settle, 160);
+  }
+
+  // ---- pointer input: tap = start/pause/resume; drag, pinch and wheel zoom while paused/done ----
+  const pts = new Map();
+  let gest = null;
+  uiC.addEventListener('pointerdown', e => {
+    try { uiC.setPointerCapture(e.pointerId); } catch (_) {}
+    pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pts.size === 1) gest = { type: 'tap', x0: e.clientX, y0: e.clientY, t: performance.now(), lx: e.clientX, ly: e.clientY };
+    else if (pts.size === 2 && canZoom()) {
+      const [a, b] = [...pts.values()];
+      gest = { type: 'pinch', d: Math.hypot(a.x - b.x, a.y - b.y), mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2 };
+    }
+  });
+  uiC.addEventListener('pointermove', e => {
+    if (!pts.has(e.pointerId) || !gest) return;
+    pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (gest.type === 'tap' && Math.hypot(e.clientX - gest.x0, e.clientY - gest.y0) > 8) {
+      if (canZoom()) gest.type = 'pan'; else gest.type = 'none';
+    }
+    if (gest.type === 'pan') {
+      const [dx, dy] = dirToCanvas(e.clientX - gest.lx, e.clientY - gest.ly);
+      gest.lx = e.clientX; gest.ly = e.clientY;
+      panBy(dx, dy); requestRender();
+    } else if (gest.type === 'pinch' && pts.size >= 2) {
+      const [a, b] = [...pts.values()];
+      const d = Math.hypot(a.x - b.x, a.y - b.y), mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+      const [dx, dy] = dirToCanvas(mx - gest.mx, my - gest.my);
+      panBy(dx, dy);
+      const [cx, cy] = toCanvas(mx, my);
+      if (gest.d > 0) zoomAt(cx, cy, d / gest.d);
+      gest.d = d; gest.mx = mx; gest.my = my;
+      requestRender();
+    }
+  });
+  function endPointer(e) {
+    if (!pts.has(e.pointerId)) return;
+    pts.delete(e.pointerId);
+    if (!gest) return;
+    if (gest.type === 'tap' && pts.size === 0 && performance.now() - gest.t < 500) {
+      if (selStep > 0 && canZoom()) selectTap(gest.x0, gest.y0);
+      else if (state === 'idle') start(); else if (state === 'run' || state === 'paused') togglePause();
+    }
+    if (gest.type === 'pinch' && pts.size === 1) { const [a] = [...pts.values()]; gest = { type: 'pan', lx: a.x, ly: a.y }; return; }
+    if (pts.size === 0) gest = null;
+  }
+  uiC.addEventListener('pointerup', endPointer);
+  uiC.addEventListener('pointercancel', endPointer);
+  uiC.addEventListener('wheel', e => {
+    e.preventDefault();
+    if (!canZoom()) return;
+    const [cx, cy] = toCanvas(e.clientX, e.clientY);
+    zoomAt(cx, cy, Math.exp(-e.deltaY * 0.0015));
+    requestRender();
+  }, { passive: false });
+
+  document.getElementById('zin').addEventListener('click', () => { const [x, y] = toCanvas(cw / 2, ch / 2); zoomAt(x, y, 2); requestRender(); });
+  document.getElementById('zout').addEventListener('click', () => { const [x, y] = toCanvas(cw / 2, ch / 2); zoomAt(x, y, 0.5); requestRender(); });
+  document.getElementById('zfit').addEventListener('click', () => { fitView(); renderView(false); });
+  selBtn.addEventListener('click', () => {
+    if (selStep > 0) { selStep = 0; selMarks = []; selCands = []; }
+    else { selStep = 1; selMarks = []; selCands = []; }
+    setBars(); drawUI();
+  });
+  knBtn.addEventListener('click', () => {
+    knownMode = knownMode === 'mark' ? 'hide' : knownMode === 'hide' ? 'off' : 'mark';
+    knBtn.textContent = 'known: ' + knownMode;
+    knBtn.classList.toggle('off', knownMode === 'off');
+    if (state !== 'idle') renderView(false);
+  });
+  document.getElementById('selRun').addEventListener('click', () => { fitView(); start(); });
+  selSaveBtn.addEventListener('click', () => {
+    if (!selCurve) return;
+    const i = mineIndex(selCurve);
+    if (i >= 0) myLines.splice(i, 1);
+    else myLines.push({ a: selCurve.a, b: selCurve.b, c: selCurve.c, rich: selExp > 0 ? +(selPrimes / selExp).toFixed(1) : 0 });
+    saveMine(); rebuildMine(); updateSide();
+  });
+  famBtn.addEventListener('click', () => {
+    famMode = famMode === 'hide' ? 'mark' : famMode === 'mark' ? 'off' : 'hide';
+    famBtn.textContent = 'families: ' + famMode;
+    famBtn.classList.toggle('off', famMode === 'off');
+    if (state !== 'idle') renderView(false);
+  });
+  selFamBtn.addEventListener('click', () => { if (selCurve) addFamily(selCurve.a, selCurve.b, 'pm', 9999); });
+  document.getElementById('fadd').addEventListener('click', () => addFamily(+document.getElementById('fa').value, +document.getElementById('fb').value, document.getElementById('fs').value, +document.getElementById('fmx').value));
+  mineBtn.addEventListener('click', () => { mineEl.style.display = mineEl.style.display === 'flex' ? 'none' : 'flex'; renderMineList(); });
+  document.getElementById('selClear').addEventListener('click', clearSelection);
+  hudEl.addEventListener('click', () => { hudMini = !hudMini; hudEl.classList.toggle('mini', hudMini); hud(lastEl); });
+
+  document.addEventListener('visibilitychange', () => { if (document.hidden && state === 'run') togglePause(); });
+  for (const b of document.querySelectorAll('#modes button')) b.addEventListener('click', () => { mode = b.dataset.mode; goIdle(); });
+  twBtn.addEventListener('click', () => {
+    showTwins = !showTwins;
+    twBtn.textContent = 'twins: ' + (showTwins ? 'on' : 'off');
+    twBtn.classList.toggle('off', !showTwins);
+    if (state !== 'idle') renderView(false);
+  });
+  prBtn.addEventListener('click', () => {
+    showPrimes = !showPrimes;
+    prBtn.textContent = 'primes: ' + (showPrimes ? 'on' : 'off');
+    prBtn.classList.toggle('off', !showPrimes);
+    primeC.style.filter = showPrimes ? '' : 'drop-shadow(0 0 1.5px #fff) drop-shadow(0 0 4px rgba(255,255,255,.45))';
+    if (state !== 'idle') renderView(false);
+  });
+  lnBtn.addEventListener('click', () => {
+    showLine = !showLine;
+    lnBtn.textContent = 'line: ' + (showLine ? 'on' : 'off');
+    lnBtn.classList.toggle('off', !showLine);
+    lineC.style.visibility = showLine ? 'visible' : 'hidden';
+  });
+  const revTick = document.getElementById('revTick'), revChk = document.getElementById('revChk'), optsEl = document.getElementById('opts');
+  document.getElementById('menuBtn').addEventListener('click', goIdle);
+  revChk.addEventListener('change', () => {
+    revolve = revChk.checked;
+    spin = 0;
+    setView(); setBars(); drawUI();
+  });
+  revBtn.addEventListener('click', () => {
+    revolve = !revolve;
+    if (!revolve) spin = 0;
+    setView(); setBars();
+    if (state !== 'idle') renderView(false);
+  });
+  document.getElementById('again').addEventListener('click', start);
+  document.getElementById('save').addEventListener('click', save);
+  addEventListener('resize', () => { if (state === 'idle') { setup(); reset(); drawUI(); } });
+
+  target = goal = 0;
+  renderMineList(); renderFamList();
+  setup(); reset(); setBars(); drawUI();
+})();
+</script>
+<script data-goatcounter="https://s77ffy.goatcounter.com/count"
+        async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>
