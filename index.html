@@ -4,12 +4,12 @@
   Copyright (c) 2026 Ben Stiff @ Room46.uk. All rights reserved.
   No copying, modification, redistribution or rehosting without written permission.
 -->
-<html lang="en" data-build="PS·Ben Stiff @ Room46.uk·1.0.11·2026-11-17·ps-9c41e7">
+<html lang="en" data-build="PS·Ben Stiff @ Room46.uk·1.0.12·2026-11-17·ps-9c41e7">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="app-repo" content="prime-spiral">
-<meta name="app-version" content="1.0.11">
+<meta name="app-version" content="1.0.12">
 <title>Prime Spiral</title>
 <style>
 html,body{margin:0;height:100%;background:#000;overflow:hidden;color:#39ff14;font-family:ui-monospace,Menlo,Consolas,monospace;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
@@ -58,6 +58,12 @@ button:disabled{opacity:.25;box-shadow:none}
 #kn{color:#ff2ed2;border-color:#ff2ed2;box-shadow:0 0 8px rgba(255,46,210,.35)}
 #selSave{color:#ff9f1c!important;border-color:#ff9f1c!important}
 #selb.on{background:#00e5ff;color:#000;border-color:#00e5ff}
+#opts{display:none}
+#menuBtn{font-weight:600}
+.tick{pointer-events:auto;align-items:center;gap:8px;font-size:14px;color:#39ff14;cursor:pointer;text-shadow:0 0 6px rgba(57,255,20,.6)}
+.tick input{appearance:none;-webkit-appearance:none;width:20px;height:20px;margin:0;border:1px solid #39ff14;border-radius:3px;background:rgba(0,0,0,.7);box-shadow:0 0 8px rgba(57,255,20,.35);display:grid;place-content:center;cursor:pointer}
+.tick input:checked::after{content:'';width:10px;height:10px;background:#39ff14;border-radius:2px;box-shadow:0 0 6px #39ff14}
+.tick.dis{opacity:.3;pointer-events:none}
 #lock{position:fixed;inset:0;display:none;align-items:center;justify-content:center;text-align:center;padding:24px;background:#000;font-size:15px;line-height:1.6;z-index:9}
 #lock a{color:#d6ffcc}
 </style>
@@ -68,13 +74,14 @@ button:disabled{opacity:.25;box-shadow:none}
 <canvas id="ui"></canvas>
 <div id="hud"></div>
 <div id="opts">
+  <button id="menuBtn" class="small">☰ menu</button>
   <button id="pr" class="small">primes: on</button>
-  <button id="tw" class="small">twins: on</button>
+  <button id="tw" class="small off">twins: off</button>
   <button id="ln" class="small">line: on</button>
   <button id="rev" class="small off">revolve: off</button>
-  <button id="kn" class="small">known: mark</button>
+  <button id="kn" class="small off">known: off</button>
   <button id="mineBtn" class="small">my lines: 0</button>
-  <button id="famBtn" class="small">families: hide</button>
+  <button id="famBtn" class="small off">families: off</button>
 </div>
 <div id="zoom"><button id="selb">select line</button><button id="zout">&minus;</button><button id="zfit">fit</button><button id="zin">+</button></div>
 <div id="bar">
@@ -83,6 +90,7 @@ button:disabled{opacity:.25;box-shadow:none}
     <button data-mode="ulam41">41</button>
     <button data-mode="grid">Grid</button>
   </div>
+  <label class="row tick" id="revTick"><input type="checkbox" id="revChk"> revolve</label>
   <div class="row" id="done" style="display:none"><button id="again">Run again</button><button id="save">Save PNG</button></div>
 </div>
 <div id="side"><div class="t" id="sideHead"></div><div id="sideStats"></div><div class="row"><button id="selRun">Run again with line</button><button id="selSave">save to my lines</button><button id="selFam">add family</button><button id="selClear">clear</button></div><pre id="sideList"></pre></div>
@@ -92,7 +100,7 @@ button:disabled{opacity:.25;box-shadow:none}
 <div id="lock"></div>
 <script>
 'use strict';
-const VERSION = '1.0.11';
+const VERSION = '1.0.12';
 const BUILD = 'PS·Ben Stiff @ Room46.uk·' + VERSION + '·2026-11-17·ps-9c41e7';
 // Domain lock (off while empty). e.g. LOCK_HOST='s77ffy.github.io', HOME_URL='https://s77ffy.github.io/prime-spiral/'
 const LOCK_HOST = '';
@@ -124,7 +132,7 @@ if (!locked()) (function () {
   const TAU = Math.PI * 2;
   const MODE_INFO = {
     sacks: 'Sacks spiral · Euler’s n²+n+41 curves off to the left',
-    ulam41: 'Ulam square spiral from 41 · famous prime lines in pink (Euler\u2019s is the diagonal)',
+    ulam41: 'Ulam square spiral from 41 \u00B7 Euler\u2019s primes run down the diagonal',
     grid: 'row by row from the top-left · zooms out as it fills'
   };
 
@@ -153,14 +161,14 @@ if (!locked()) (function () {
   let VW, VH, vox, voy, cssL = 0, cssT = 0;
   let buf, twD, twL, euB, tmp, rIdx, img, img32, lut, lut2, lutL;
   let G, GD, GL, cols, rows, cs, per, cells;
-  let mode = 'sacks', revolve = false, showTwins = true, showPrimes = true, showLine = true, hudMini = false;
+  let mode = 'sacks', revolve = false, showTwins = false, showPrimes = true, showLine = true, hudMini = false;
   let s, s0, N, count, largest, lastPrime, twins, euler, target, goal, t0, pausedAt = 0, lastT = 0, lastEl = 0, spin = 0, state = 'idle';
   let lineT = 0, lineDirty = false, lineVisible = false;
   let UX = 0, UY = 0;
   let sv = 1, wcx = 0, wcy = 0;                     // zoom view: pixels per world unit, world centre
-  let knownMode = 'mark', curves = [], knownCount = 0, mineCount = 0, myB, tmp16, accMy;
+  let knownMode = 'off', curves = [], knownCount = 0, mineCount = 0, myB, tmp16, accMy;
   const MINE_KEY = 'primeSpiral.myLines', FAM_KEY = 'primeSpiral.families';
-  let famMode = 'hide', famCount = 0, famB, accF, famJob = 0;
+  let famMode = 'off', famCount = 0, famB, accF, famJob = 0;
   let fams = (() => { try { const a = JSON.parse(localStorage.getItem(FAM_KEY) || 'null'); if (Array.isArray(a)) return a.filter(o => o && o.a > 0); } catch (_) {} return [
     { a: 4, b: 4, sign: 'pm', max: 9999, prime: true },
     { a: 1, b: 1, sign: 'pm', max: 9999, prime: true },
@@ -1107,6 +1115,11 @@ if (!locked()) (function () {
 
   function setBars() {
     barEl.style.display = (state === 'idle' || state === 'done') ? 'flex' : 'none';
+    optsEl.style.display = state === 'idle' ? 'none' : 'flex';
+    revTick.style.display = state === 'idle' ? 'flex' : 'none';
+    revTick.classList.toggle('dis', mode === 'grid');
+    revChk.checked = revolve && mode !== 'grid';
+    if (state === 'idle') mineEl.style.display = 'none';
     doneEl.style.display = state === 'done' ? 'flex' : 'none';
     zoomEl.style.display = canZoom() ? 'flex' : 'none';
     for (const b of document.querySelectorAll('#modes button')) b.classList.toggle('sel', b.dataset.mode === mode);
@@ -1157,6 +1170,8 @@ if (!locked()) (function () {
 
   function goIdle() {
     state = 'idle'; spin = 0;
+    clearTimeout(settleTimer); famJob++;
+    selStep = 0; selMarks = []; selCands = [];
     hudEl.style.display = 'none';
     setView(); reset();
     setBars(); drawUI();
@@ -1336,6 +1351,13 @@ if (!locked()) (function () {
     lnBtn.textContent = 'line: ' + (showLine ? 'on' : 'off');
     lnBtn.classList.toggle('off', !showLine);
     lineC.style.visibility = showLine ? 'visible' : 'hidden';
+  });
+  const revTick = document.getElementById('revTick'), revChk = document.getElementById('revChk'), optsEl = document.getElementById('opts');
+  document.getElementById('menuBtn').addEventListener('click', goIdle);
+  revChk.addEventListener('change', () => {
+    revolve = revChk.checked;
+    spin = 0;
+    setView(); setBars(); drawUI();
   });
   revBtn.addEventListener('click', () => {
     revolve = !revolve;
