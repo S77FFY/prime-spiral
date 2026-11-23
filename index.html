@@ -4,18 +4,21 @@
   Copyright (c) 2026 Ben Stiff @ Room46.uk. All rights reserved.
   No copying, modification, redistribution or rehosting without written permission.
 -->
-<html lang="en" data-build="PS·Ben Stiff @ Room46.uk·1.0.14·2026-11-17·ps-9c41e7">
+<html lang="en" data-build="PS·Ben Stiff @ Room46.uk·1.0.16·2026-11-17·ps-9c41e7">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="app-repo" content="prime-spiral">
-<meta name="app-version" content="1.0.14">
+<meta name="app-version" content="1.0.16">
 <title>Prime Spiral</title>
 <style>
 html,body{margin:0;height:100%;background:#000;overflow:hidden;color:#39ff14;font-family:ui-monospace,Menlo,Consolas,monospace;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
 canvas{position:fixed;display:block}
 #ui{left:0;top:0;touch-action:none}
 .ring{position:fixed;width:22px;height:22px;margin:-13px 0 0 -13px;border:2px solid #00e5ff;border-radius:50%;box-shadow:0 0 8px #00e5ff,inset 0 0 6px rgba(0,229,255,.5);pointer-events:none;z-index:4;display:none}
+.ring::after{content:'';position:absolute;left:50%;top:50%;width:8px;height:8px;margin:-4px 0 0 -4px;border-radius:50%;background:#28e8ff;box-shadow:0 0 6px #28e8ff}
+.ring span{position:absolute;left:24px;top:-12px;white-space:nowrap;font-size:11px;font-weight:600;color:#00e5ff;background:rgba(0,0,0,.8);border:1px solid rgba(0,229,255,.5);border-radius:3px;padding:1px 5px}
+#selUndo{display:none}
 #line{filter:drop-shadow(0 0 2px rgba(57,255,20,.6))}
 #primes{filter:drop-shadow(0 0 1.5px #39ff14) drop-shadow(0 0 4px rgba(57,255,20,.5))}
 #hud{position:fixed;left:max(12px,env(safe-area-inset-left));top:calc(30px + env(safe-area-inset-top));font-size:12px;line-height:1.55;text-shadow:0 0 6px rgba(57,255,20,.7);display:none;white-space:pre;background:rgba(0,0,0,.5);padding:6px 9px;border-radius:4px;cursor:pointer}
@@ -65,6 +68,20 @@ button:disabled{opacity:.25;box-shadow:none}
 .tick input{appearance:none;-webkit-appearance:none;width:20px;height:20px;margin:0;border:1px solid #39ff14;border-radius:3px;background:rgba(0,0,0,.7);box-shadow:0 0 8px rgba(57,255,20,.35);display:grid;place-content:center;cursor:pointer}
 .tick input:checked::after{content:'';width:10px;height:10px;background:#39ff14;border-radius:2px;box-shadow:0 0 6px #39ff14}
 .tick.dis{opacity:.3;pointer-events:none}
+#rh{position:fixed;left:50%;transform:translateX(-50%);top:calc(30px + env(safe-area-inset-top));width:min(560px,calc(100vw - 520px));min-width:300px;display:none;flex-direction:column;background:rgba(0,0,0,.82);border:1px solid #ffd23f;border-radius:6px;box-shadow:0 0 14px rgba(255,210,63,.3);font-size:11px;color:#fff3c4;z-index:3}
+#rh .rhh{display:flex;gap:4px;align-items:center;padding:6px 8px 0}
+#rh .rht{cursor:pointer;padding:4px 8px;border-radius:4px 4px 0 0;color:#ffd23f;opacity:.55;font-weight:600}
+#rh .rht.on{opacity:1;background:rgba(255,210,63,.14)}
+#rhMin{margin-left:auto;cursor:pointer;color:#ffd23f;padding:2px 8px;font-size:14px}
+#rhBody{padding:6px 8px 8px}
+#rhC{position:static;display:block;width:100%;height:170px}
+#rhInfo{margin-top:4px;line-height:1.5}
+#rhInfo b{color:#fff}
+.rhCtl{display:flex;gap:6px;align-items:center;margin-top:6px}
+#rh button{color:#ffd23f;border-color:#ffd23f;box-shadow:0 0 6px rgba(255,210,63,.3);font-size:11px;padding:4px 8px}
+#rh button.on{background:#ffd23f;color:#000}
+#rhK{flex:1;accent-color:#ffd23f}
+@media (max-width:900px){#rh{top:auto;bottom:calc(96px + env(safe-area-inset-bottom));width:94vw;min-width:0}}
 #lock{position:fixed;inset:0;display:none;align-items:center;justify-content:center;text-align:center;padding:24px;background:#000;font-size:15px;line-height:1.6;z-index:9}
 #lock a{color:#d6ffcc}
 </style>
@@ -74,7 +91,7 @@ button:disabled{opacity:.25;box-shadow:none}
 <canvas id="primes"></canvas>
 <canvas id="ui"></canvas>
 <div id="hud"></div>
-<div class="ring" id="ring0"></div><div class="ring" id="ring1"></div>
+<div id="rings"></div>
 <div id="opts">
   <button id="menuBtn" class="small">☰ menu</button>
   <button id="pr" class="small">primes: on</button>
@@ -85,12 +102,13 @@ button:disabled{opacity:.25;box-shadow:none}
   <button id="mineBtn" class="small">my lines: 0</button>
   <button id="famBtn" class="small off">families: off</button>
 </div>
-<div id="zoom"><button id="selb">select line</button><button id="zout">&minus;</button><button id="zfit">fit</button><button id="zin">+</button></div>
+<div id="zoom"><button id="selUndo">undo</button><button id="selb">select line</button><button id="zout">&minus;</button><button id="zfit">fit</button><button id="zin">+</button></div>
 <div id="bar">
   <div class="row" id="modes">
     <button data-mode="sacks" class="sel">Spiral</button>
     <button data-mode="ulam41">41</button>
     <button data-mode="grid">Grid</button>
+    <button data-mode="riemann">Riemann</button>
   </div>
   <label class="row tick" id="revTick"><input type="checkbox" id="revChk"> revolve</label>
   <div class="row" id="done" style="display:none"><button id="again">Run again</button><button id="save">Save PNG</button></div>
@@ -99,10 +117,19 @@ button:disabled{opacity:.25;box-shadow:none}
 <div id="mine"><div class="t">my lines</div><div style="opacity:.7">hidden or marked with the known button</div><div id="mineList"></div>
 <div class="fam"><div class="t2">families · ak² + bk ± c</div><div style="opacity:.7">prime: any prime c up to max · any: any c up to max · exact: just that c · families button hides / marks them</div><div id="famList"></div>
 <div class="fadd">a<input id="fa" type="number" value="4" min="1">b<input id="fb" type="number" value="4"><select id="fs"><option value="pm">±</option><option value="p">+</option><option value="m">−</option></select><select id="fk" style="width:62px"><option value="prime">prime</option><option value="any">any</option><option value="exact">exact</option></select><span id="fmxl">max</span><input id="fmx" type="number" value="9999" min="1"><button id="fadd">add</button></div></div></div>
+<div id="rh">
+  <div class="rhh"><span class="rht" data-tab="err">prime count vs RH limit</span><span class="rht" data-tab="zeros">primes from zeros</span><span id="rhMin">–</span></div>
+  <div id="rhBody">
+    <canvas id="rhC"></canvas>
+    <div id="rhInfo"></div>
+    <div class="rhCtl" id="rhErrCtl"><button id="rhFitBand" class="on">fit RH band</button><button id="rhFitCurve">fit the error</button></div>
+    <div class="rhCtl" id="rhZCtl"><span>zeros</span><input id="rhK" type="range" min="0" max="100" value="10"><b id="rhKv">10</b><button id="rhPlay">play</button></div>
+  </div>
+</div>
 <div id="lock"></div>
 <script>
 'use strict';
-const VERSION = '1.0.14';
+const VERSION = '1.0.16';
 const BUILD = 'PS·Ben Stiff @ Room46.uk·' + VERSION + '·2026-11-17·ps-9c41e7';
 // Domain lock (off while empty). e.g. LOCK_HOST='s77ffy.github.io', HOME_URL='https://s77ffy.github.io/prime-spiral/'
 const LOCK_HOST = '';
@@ -135,7 +162,8 @@ if (!locked()) (function () {
   const MODE_INFO = {
     sacks: 'Sacks spiral · Euler’s n²+n+41 curves off to the left',
     ulam41: 'Ulam square spiral from 41 \u00B7 Euler\u2019s primes run down the diagonal',
-    grid: 'row by row from the top-left · zooms out as it fills'
+    grid: 'row by row from the top-left · zooms out as it fills',
+    riemann: 'Riemann hypothesis \u00B7 the prime count vs the RH limit, and the primes rebuilt from zeta zeros'
   };
 
   // Base primes for the segmented sieve
@@ -182,6 +210,7 @@ if (!locked()) (function () {
   let sel = null, selCurve = null, selL, accSel, selStep = 0, selMarks = [], selCands = [], selList = [], selShown = 0;
   let selPrimes = 0, selVals = 0, selExp = 0, uiMsg = '', uiMsgT = 0;
   const sideEl = document.getElementById('side'), sideHead = document.getElementById('sideHead'), sideStats = document.getElementById('sideStats'), sideList = document.getElementById('sideList');
+  const selUndoBtn = document.getElementById('selUndo');
   const selBtn = document.getElementById('selb'), knBtn = document.getElementById('kn');
   const famBtn = document.getElementById('famBtn'), famList = document.getElementById('famList'), selFamBtn = document.getElementById('selFam');
   const mineBtn = document.getElementById('mineBtn'), mineEl = document.getElementById('mine'), mineList = document.getElementById('mineList'), selSaveBtn = document.getElementById('selSave');
@@ -218,6 +247,116 @@ if (!locked()) (function () {
     for (const cv of [lineC, primeC]) { cv.style.left = cssL + 'px'; cv.style.top = cssT + 'px'; }
     drawUI();
   }
+  // ================= Riemann mode =================
+  let rh = false, rhTab = 'err', rhFit = 'band', rhMinimised = false, rhPlayT = 0;
+  const RH_ZEROS = [14.134725,21.022040,25.010858,30.424876,32.935062,37.586178,40.918719,43.327073,48.005151,49.773832,52.9702,56.4487,59.3464,60.8314,65.1134,67.0787,69.5472,72.0668,75.7050,77.1447,79.3373,82.9107,84.7350,87.4260,88.8085,92.4922,94.6511,95.8705,98.8318,101.3169,103.7260,105.4466,107.1684,111.0303,111.8737,114.3207,116.2263,118.7910,121.3698,122.9472,124.2566,127.5167,129.5788,131.0876,133.4979,134.7563,138.1163,139.7357,141.1242,143.1116,146.0012,147.4225,150.0536,150.9253,153.0245,156.1136,157.5962,158.8508,161.1888,163.0307,165.5372,167.1842,169.0951,169.9115,173.4118,174.7538,176.4418,178.3771,179.9167,182.2070,184.8747,185.5985,187.2290,189.4161,192.0266,193.0798,195.2653,196.8766,198.0152,201.2649,202.4933,204.1900,205.3945,207.9064,209.5763,211.6911,213.3476,214.5473,216.1695,219.0676,220.7152,221.4304,224.0075,224.9828,227.4218,229.3372,231.2505,231.9870,233.6934,236.5243];
+  let rhX = [], rhE = [];                       // samples: x and pi(x) - li(x)
+  const rhEl = document.getElementById('rh'), rhC = document.getElementById('rhC'), rhCtx = rhC.getContext('2d'), rhInfo = document.getElementById('rhInfo');
+  // logarithmic integral li(x), Ramanujan's series
+  function li(x) {
+    const L = Math.log(x); let sum = 0, term = 1, inner = 0;
+    for (let n = 1; n <= 120; n++) { term *= L / n; if (n % 2 === 1) inner += 1 / n; sum += ((n - 1) % 2 ? -1 : 1) * term / Math.pow(2, n - 1) * inner; }
+    return 0.5772156649015329 + Math.log(L) + Math.sqrt(x) * sum;
+  }
+  const rhLimit = x => Math.sqrt(x) * Math.log(x) / (8 * Math.PI);   // Schoenfeld: RH  <=>  |pi(x) - li(x)| < this, for x >= 2657
+  function rhSample() {
+    if (!rh) return;
+    const x = N - 1; if (x < 30) return;
+    if (rhX.length && x <= rhX[rhX.length - 1] * 1.002) return;
+    rhX.push(x); rhE.push(count - li(x));
+  }
+  function rhSize() {
+    const r = rhC.getBoundingClientRect(), dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const w = Math.max(10, Math.round(r.width * dpr)), hh = Math.max(10, Math.round(r.height * dpr));
+    if (rhC.width !== w || rhC.height !== hh) { rhC.width = w; rhC.height = hh; }
+    return dpr;
+  }
+  function rhDraw() {
+    if (!rh || state === 'idle' || rhMinimised) return;
+    const d = rhSize(), Wc = rhC.width, Hc = rhC.height, g = rhCtx;
+    g.clearRect(0, 0, Wc, Hc);
+    g.font = Math.round(10 * d) + 'px ui-monospace,Menlo,Consolas,monospace';
+    if (rhTab === 'err') rhDrawErr(g, Wc, Hc, d); else rhDrawZeros(g, Wc, Hc, d);
+  }
+  function rhDrawErr(g, Wc, Hc, d) {
+    const pl = 46 * d, pr = 8 * d, pt = 8 * d, pb = 18 * d, w = Wc - pl - pr, hh = Hc - pt - pb;
+    const x0 = Math.log10(30), x1 = Math.log10(Math.max(1000, goal || 1e6));
+    const X = x => pl + (Math.log10(x) - x0) / (x1 - x0) * w;
+    // plotted value: error relative to sqrt(x) log x; the RH limit is then a flat band at +/- 1/(8 pi)
+    const band = 1 / (8 * Math.PI);
+    let ymax = band * 1.25;
+    if (rhFit === 'curve') { ymax = 1e-6; for (let i = 0; i < rhX.length; i++) if (rhX[i] >= 2657) ymax = Math.max(ymax, Math.abs(rhE[i]) / (Math.sqrt(rhX[i]) * Math.log(rhX[i]))); ymax *= 1.4; }
+    const Y = v => pt + hh / 2 - v / ymax * hh / 2;
+    // band
+    const x2657 = Math.max(pl, X(2657));
+    if (band < ymax) { g.fillStyle = 'rgba(255,46,210,.12)'; g.fillRect(x2657, Y(band), pl + w - x2657, Y(-band) - Y(band)); }
+    g.strokeStyle = 'rgba(255,46,210,.85)'; g.setLineDash([5 * d, 4 * d]); g.lineWidth = 1 * d;
+    if (band < ymax) for (const v of [band, -band]) { g.beginPath(); g.moveTo(x2657, Y(v)); g.lineTo(pl + w, Y(v)); g.stroke(); }
+    g.setLineDash([]);
+    g.strokeStyle = 'rgba(255,255,255,.25)'; g.beginPath(); g.moveTo(pl, Y(0)); g.lineTo(pl + w, Y(0)); g.stroke();
+    // axes labels
+    g.fillStyle = 'rgba(255,243,196,.7)'; g.textAlign = 'center';
+    for (let p = 2; p <= x1; p++) { const xx = X(Math.pow(10, p)); g.fillText('10' + String(p).replace(/./g, ch => '\u2070\u00B9\u00B2\u00B3\u2074\u2075\u2076\u2077\u2078\u2079'[+ch]), xx, Hc - 4 * d); g.fillStyle = 'rgba(255,255,255,.06)'; g.fillRect(xx, pt, 1, hh); g.fillStyle = 'rgba(255,243,196,.7)'; }
+    g.textAlign = 'right';
+    if (band < ymax) { g.fillStyle = '#ff2ed2'; g.fillText('RH +', pl - 4 * d, Y(band) + 3 * d); g.fillText('RH \u2212', pl - 4 * d, Y(-band) + 3 * d); }
+    else { g.fillStyle = '#ff2ed2'; g.textAlign = 'left'; g.fillText('pink RH band is far outside this zoom', pl + 6 * d, pt + 10 * d); g.textAlign = 'right'; }
+    g.fillStyle = 'rgba(255,243,196,.7)'; g.fillText('0', pl - 4 * d, Y(0) + 3 * d);
+    // the curve
+    g.strokeStyle = '#28e8ff'; g.lineWidth = 1.6 * d; g.beginPath();
+    let started = false;
+    for (let i = 0; i < rhX.length; i++) {
+      const v = rhE[i] / (Math.sqrt(rhX[i]) * Math.log(rhX[i])), xx = X(rhX[i]), yy = Math.max(pt, Math.min(pt + hh, Y(v)));
+      if (!started) { g.moveTo(xx, yy); started = true; } else g.lineTo(xx, yy);
+    }
+    g.stroke();
+    // readout
+    const n = rhX.length;
+    if (!n) { rhInfo.innerHTML = 'waiting for primes\u2026'; return; }
+    const x = rhX[n - 1], e = rhE[n - 1], lim = rhLimit(x);
+    rhInfo.innerHTML = 'up to <b>' + fmt(x) + '</b>: primes <b>' + fmt(count) + '</b> \u00B7 li(x) predicts <b>' + fmt(li(x)) + '</b><br>' +
+      'error <b style="color:#28e8ff">' + (e >= 0 ? '+' : '\u2212') + fmt(Math.abs(e)) + '</b> \u00B7 RH limit \u00B1<b style="color:#ff2ed2">' + fmt(lim) + '</b>' +
+      (x >= 2657 ? ' \u00B7 using <b>' + (100 * Math.abs(e) / lim).toFixed(1) + '%</b> of it' : '') +
+      '<br><span style="opacity:.7">cyan = (primes counted \u2212 li(x)) scaled by \u221Ax\u00B7log x. RH is the same as saying it never leaves the pink band (from x = 2,657).</span>';
+  }
+  // Chebyshev psi(x): log p for every prime power p^m <= x
+  function psiTrue(x) { let s0 = 0; for (let p = 2; p <= x; p++) if (SMALLP[p]) for (let q = p; q <= x; q *= p) s0 += Math.log(p); return s0; }
+  // Riemann-von Mangoldt explicit formula with the first K zeros 1/2 + i*gamma
+  function psiZeros(x, K) {
+    let s0 = x - Math.log(2 * Math.PI) - 0.5 * Math.log(1 - 1 / (x * x));
+    const L = Math.log(x), r = Math.sqrt(x);
+    for (let j = 0; j < K; j++) { const gm = RH_ZEROS[j]; s0 -= 2 * r * (0.5 * Math.cos(gm * L) + gm * Math.sin(gm * L)) / (0.25 + gm * gm); }
+    return s0;
+  }
+  function rhDrawZeros(g, Wc, Hc, d) {
+    const K = +document.getElementById('rhK').value;
+    const pl = 30 * d, pr = 8 * d, pt = 8 * d, pb = 18 * d, w = Wc - pl - pr, hh = Hc - pt - pb;
+    const XMAX = 50, YMAX = 56;
+    const X = x => pl + (x - 1) / (XMAX - 1) * w, Y = v => pt + hh - v / YMAX * hh;
+    // prime markers
+    g.textAlign = 'center';
+    for (let p = 2; p <= XMAX; p++) if (SMALLP[p]) { g.fillStyle = 'rgba(57,255,20,.18)'; g.fillRect(X(p), pt, 1 * d, hh); g.fillStyle = 'rgba(57,255,20,.8)'; if (p < 20 || p % 2) g.fillText(String(p), X(p), Hc - 4 * d); }
+    // true staircase (green)
+    g.strokeStyle = '#39ff14'; g.lineWidth = 2 * d; g.beginPath();
+    let prev = 0; g.moveTo(X(1), Y(0));
+    for (let x = 2; x <= XMAX; x++) { const v = psiTrue(x); g.lineTo(X(x), Y(prev)); g.lineTo(X(x), Y(v)); prev = v; }
+    g.lineTo(X(XMAX), Y(prev)); g.stroke();
+    // waves from the zeros (cyan)
+    g.strokeStyle = '#28e8ff'; g.lineWidth = 1.4 * d; g.beginPath();
+    const steps = Math.round(w / d * 1.5);
+    for (let i = 0; i <= steps; i++) { const x = 1.5 + (XMAX - 1.5) * i / steps, v = psiZeros(x, K), yy = Math.max(pt, Math.min(pt + hh, Y(v))); if (i) g.lineTo(X(x), yy); else g.moveTo(X(x), yy); }
+    g.stroke();
+    rhInfo.innerHTML = 'Using the first <b style="color:#28e8ff">' + K + '</b> zeros of the zeta function. Each zero \u00BD + i\u03B3 adds one wave; the more you add, the closer the cyan curve climbs the green staircase, stepping up at every prime (and prime power).' +
+      '<br><span style="opacity:.7">RH says every one of these zeros has real part exactly \u00BD \u2014 which is why the waves all have the same \u221Ax size and the error stays small.</span>';
+  }
+  function rhTabs() {
+    for (const t of rhEl.querySelectorAll('.rht')) t.classList.toggle('on', t.dataset.tab === rhTab);
+    document.getElementById('rhErrCtl').style.display = rhTab === 'err' ? 'flex' : 'none';
+    document.getElementById('rhZCtl').style.display = rhTab === 'zeros' ? 'flex' : 'none';
+    document.getElementById('rhBody').style.display = rhMinimised ? 'none' : 'block';
+    document.getElementById('rhMin').textContent = rhMinimised ? '+' : '\u2013';
+    rhDraw();
+  }
+
   function revolving() { return revolve && mode !== 'grid'; }
 
   function setView() {
@@ -515,6 +654,45 @@ if (!locked()) (function () {
     let pr = 0, vals = 0, ex = 0;
     for (let kk = k1 + 1; kk < k2; kk += step) { const v = a * kk * kk + b * kk + c2; if (v < 2 || v >= N) continue; vals++; ex += 1 / Math.log(Math.max(3, v)); if (isP(v)) pr++; }
     return { score: (pr + 1) / (ex + 1), pr, vals };
+  }
+  // n = a k^2 + b k + c hits n at an integer k?
+  function onCurve(a, b, c2, n) {
+    const disc = b * b - 4 * a * (c2 - n); if (disc < 0) return false;
+    const sq = Math.round(Math.sqrt(disc)); if (sq * sq !== disc) return false;
+    return (-b + sq) % (2 * a) === 0 || (-b - sq) % (2 * a) === 0;
+  }
+  // best line through one candidate prime from every picked point (anchored on the first and last picks)
+  function fitMulti(cands) {
+    const AS = [1, 4, 9, 16, 25, 36], CMAX = 200000, L = cands.length, A0 = cands[0], Z = cands[L - 1];
+    let best = null;
+    for (const [da, pa] of A0) for (const [dz, pz] of Z) {
+      if (pa === pz) continue;
+      const near0 = 1 / (1 + (da + dz) / 1.5);
+      const p1 = Math.min(pa, pz), p2 = Math.max(pa, pz);
+      for (const a of AS) for (let b = 0; b < 2 * a; b++) {
+        const kc = (-b + Math.sqrt(b * b + 4 * a * p1)) / (2 * a), span = CMAX / (2 * Math.sqrt(a * p1)) + 1;
+        for (let k1 = Math.max(0, Math.ceil(kc - span)); k1 <= kc + span; k1++) {
+          const c2 = p1 - a * k1 * k1 - b * k1; if (Math.abs(c2) > CMAX) continue;
+          const disc = b * b - 4 * a * (c2 - p2); if (disc < 0) continue;
+          const sq = Math.round(Math.sqrt(disc)); if (sq * sq !== disc) continue;
+          const num = -b + sq; if (num % (2 * a) !== 0) continue;
+          const k2 = num / (2 * a); if (k2 <= k1 + 1) continue;
+          // every middle pick must have a prime on this line
+          let near = near0, ok = true; const picks = [pa];
+          for (let i = 1; i < L - 1 && ok; i++) {
+            let hit = null;
+            for (const [d, p] of cands[i]) if (onCurve(a, b, c2, p)) { hit = [d, p]; break; }
+            if (!hit) ok = false; else { near *= 1 / (1 + hit[0] / 1.5); picks.push(hit[1]); }
+          }
+          if (!ok) continue;
+          picks.push(pz);
+          const sc = scoreCurve(a, b, c2, k1, k2);
+          const score = near * sc.score / (1 + 0.15 * (Math.sqrt(a) - 1));
+          if (!best || score > best.score) best = { a, b, c: c2, k1, k2, score, picks };
+        }
+      }
+    }
+    return best;
   }
   function fitCurve(C1, C2) {
     const AS = [1, 4, 9, 16, 25, 36], CMAX = 200000;
@@ -859,7 +1037,7 @@ if (!locked()) (function () {
     if (mode === 'grid') { renderGrid(); return; }
     if (!isZoomed()) { renderCentre(); lineDirty = true; updateLine(); }
     else { if (preview || sv < s * 2) renderAggView(); else renderBits(); drawZoomLine(); }   // full rebuild only once it adds detail
-    hud(lastEl); updateSide(); if (selMarks.length || selStep) drawUI();
+    hud(lastEl); updateSide(); rhDraw(); if (selMarks.length || selStep) drawUI();
   }
 
   function renderGrid() {
@@ -940,7 +1118,7 @@ if (!locked()) (function () {
       uctx.fillText('tap to hunt primes for 60 seconds', UW / 2, UH * 0.4 + 34 * k);
       uctx.globalAlpha = 0.6;
       uctx.font = F(11);
-      uctx.fillText(MODE_INFO[mode], UW / 2, UH * 0.4 + 56 * k);
+      uctx.fillText(MODE_INFO[rh ? 'riemann' : mode], UW / 2, UH * 0.4 + 56 * k);
       uctx.fillText('tap to pause · pinch, drag or scroll to zoom while paused', UW / 2, UH * 0.4 + 74 * k);
       uctx.globalAlpha = 1; uctx.shadowBlur = 0;
       uctx.fillStyle = 'rgba(57,255,20,.6)';
@@ -964,7 +1142,7 @@ if (!locked()) (function () {
     }
     if (state !== 'idle') {
       uctx.textAlign = 'center';
-      const msg = uiMsg && performance.now() < uiMsgT ? uiMsg : (selStep === 1 ? 'SELECT: tap a prime at the START of a line (zoom in close)' : selStep === 2 ? 'now tap a prime at the END \u2014 you can zoom and pan first' : '');
+      const msg = uiMsg && performance.now() < uiMsgT ? uiMsg : (selStep ? (selMarks.length === 0 ? 'SELECT: tap primes along a line (zoom in close) \u2014 2 or more, then done' : selMarks.length + ' picked \u2014 tap more, zoom / pan between taps, or done') : '');
       if (msg) {
         uctx.font = '600 ' + F(13);
         const w = uctx.measureText(msg).width + 24 * k;
@@ -979,12 +1157,15 @@ if (!locked()) (function () {
     uctx.fillText('v' + VERSION, UW - 10 * k, UH - 10 * k);
   }
   // cyan rings sit on the picked primes, positioned from the picture's own coordinates
+  const ringsEl = document.getElementById('rings');
   function placeRings() {
-    for (let i = 0; i < 2; i++) {
-      const el = document.getElementById('ring' + i), m = selMarks[i];
+    while (ringsEl.children.length < selMarks.length) { const d = document.createElement('div'); d.className = 'ring'; d.appendChild(document.createElement('span')); ringsEl.appendChild(d); }
+    for (let i = 0; i < ringsEl.children.length; i++) {
+      const el = ringsEl.children[i], m = selMarks[i];
       if (!m || state === 'idle') { el.style.display = 'none'; continue; }
       const p = fromCanvas(c - vox + (m[0] - wcx) * sv, c - voy + (m[1] - wcy) * sv);
       el.style.left = p[0] + 'px'; el.style.top = p[1] + 'px'; el.style.display = 'block';
+      el.firstChild.textContent = fmt(m[2]);
     }
   }
   function flash(m) { uiMsg = m; uiMsgT = performance.now() + 2500; drawUI(); setTimeout(drawUI, 2600); }
@@ -999,10 +1180,11 @@ if (!locked()) (function () {
     selSaveBtn.disabled = !!kn;
     sideHead.textContent = 'n = ' + polyText(selCurve.a, selCurve.b, selCurve.c);
     const rich = selExp > 0 ? (selPrimes / selExp) : 0;
+    const through = selPicks.length ? '<br>through ' + selPicks.map(fmt).join(', ') : '';
     sideStats.innerHTML = (kn ? '<b>' + kn + '</b> \u00B7 already known<br>' : mi ? '<b style="color:#ff9f1c">in my lines</b><br>' : 'not one of the famous lines<br>') +
       fmt(selPrimes) + ' primes of ' + fmt(selVals) + ' values (' + (selVals ? (100 * selPrimes / selVals).toFixed(1) : '0') + '%)<br>' +
       '\u00D7' + rich.toFixed(1) + ' richer than random numbers this size' +
-      (fam ? '<br><span style="color:#b26bff">in family ' + famText(fam) + '</span>' : '');
+      (fam ? '<br><span style="color:#b26bff">in family ' + famText(fam) + '</span>' : '') + through;
     if (selShown < selList.length) {
       let out = '';
       const lim = Math.min(selList.length, selShown + 3 * 4000);
@@ -1082,7 +1264,7 @@ if (!locked()) (function () {
     setBars(); renderView(false);
   }
   function clearSelection() {
-    sel = null; selCurve = null; selStep = 0; selMarks = []; selCands = [];
+    sel = null; selCurve = null; selStep = 0; selMarks = []; selCands = []; selPicks = [];
     selL.fill(0); sideEl.style.display = 'none';
     setBars(); if (state !== 'idle') renderView(false); drawUI();
   }
@@ -1093,16 +1275,33 @@ if (!locked()) (function () {
     const tol = Math.min(30, Math.max(1.2, 14 * k / sv));
     const C = nearPrimes(wx, wy, tol);
     if (!C.length) { flash('no prime there \u2014 tap right on a dot'); return; }
-    const pn = C[0][1];                                    // ring goes on the prime that was picked
-    if (mode === 'sacks') { const t = Math.sqrt(pn); selMarks.push([t * Math.cos(TAU * t), t * Math.sin(TAU * t)]); }
-    else { ulam(pn - 40); selMarks.push([UX, UY]); }
-    selCands.push(C);
-    if (selStep === 1) { selStep = 2; setBars(); drawUI(); return; }
-    selStep = 0; setBars();
-    const f = fitCurve(selCands[0], selCands[1]); selCands = [];
-    if (!f) { selMarks = []; flash('no line found through those points \u2014 try points further apart'); return; }
+    const lim = Math.max(0.6, 8 * k / sv);                // ~8 screen px around the tap
+    const Ck = C.filter((q, i) => i === 0 || q[0] <= lim);
+    selMarks.push(markFor(Ck[0][1]));                      // ring + label on the nearest prime
+    selCands.push(Ck);
+    refitSelection();
+  }
+  function markFor(pn) {
+    if (mode === 'sacks') { const t = Math.sqrt(pn); return [t * Math.cos(TAU * t), t * Math.sin(TAU * t), pn]; }
+    ulam(pn - 40); return [UX, UY, pn];
+  }
+  let selPicks = [];
+  function refitSelection() {
+    const L = selCands.length;
+    setBars();
+    if (L === 0) { drawUI(); return; }
+    if (L === 1) { flash('point 1: ' + fmt(selMarks[0][2]) + ' \u2014 now tap more primes along the line'); return; }
+    const f = fitMulti(selCands);
+    if (!f) {
+      sel = null; selCurve = null; selPicks = []; selL.fill(0); sideEl.style.display = 'none';
+      renderView(false);
+      flash('no function n = ak\u00B2 + bk + c (a = 1, 4, 9, 16, 25 or 36) passes through all ' + L + ' primes \u2014 tap undo');
+      return;
+    }
+    selPicks = f.picks;
+    for (let i = 0; i < L; i++) selMarks[i] = markFor(f.picks[i]);   // rings move to the primes the line actually uses
     applySelection(f);
-    flash('line found: n = ' + polyText(selCurve.a, selCurve.b, selCurve.c));
+    flash((L > 2 ? 'line fits all ' + L + ' points: ' : 'line found: ') + 'n = ' + polyText(selCurve.a, selCurve.b, selCurve.c));
   }
 
   function applySpin() {
@@ -1123,9 +1322,9 @@ if (!locked()) (function () {
       const m = Math.min(SEGMAX, Math.max(16, Math.ceil((want - N) / 2)));
       chunk(m);
     }
-    feedAll();
+    feedAll(); rhSample();
     if (revolving()) { spin = (spin + SPIN_DEG_PER_S * Math.min(dt, 0.1)) % 360; applySpin(); }
-    updateLine(); render(); hud(performance.now() - t0); updateSide();
+    updateLine(); render(); hud(performance.now() - t0); updateSide(); rhDraw();
     requestAnimationFrame(frame);
   }
 
@@ -1152,13 +1351,16 @@ if (!locked()) (function () {
     if (state === 'idle') mineEl.style.display = 'none';
     doneEl.style.display = state === 'done' ? 'flex' : 'none';
     zoomEl.style.display = canZoom() ? 'flex' : 'none';
-    for (const b of document.querySelectorAll('#modes button')) b.classList.toggle('sel', b.dataset.mode === mode);
+    for (const b of document.querySelectorAll('#modes button')) b.classList.toggle('sel', b.dataset.mode === 'riemann' ? rh : (!rh && b.dataset.mode === mode));
+    rhEl.style.display = rh && state !== 'idle' ? 'flex' : 'none';
     revBtn.disabled = mode === 'grid';
     lnBtn.disabled = mode === 'grid';
     knBtn.disabled = mode === 'grid';
     mineBtn.disabled = mode === 'grid';
     famBtn.disabled = mode === 'grid';
     selBtn.classList.toggle('on', selStep > 0);
+    selBtn.textContent = selStep > 0 ? 'done' : 'select line';
+    selUndoBtn.style.display = selStep > 0 && selMarks.length ? 'inline-block' : 'none';
     sideEl.style.display = (selCurve && mode !== 'grid' && state !== 'idle') ? 'flex' : 'none';
     revBtn.textContent = 'revolve: ' + (revolve ? 'on' : 'off');
     revBtn.classList.toggle('off', !revolve);
@@ -1167,6 +1369,7 @@ if (!locked()) (function () {
   function fitView() { sv = s; wcx = wcy = 0; }
 
   function start() {
+    rhX = []; rhE = [];
     target = calibrate();
     goal = Math.min(target, NMAX);
     spin = 0; setView();
@@ -1193,8 +1396,8 @@ if (!locked()) (function () {
 
   function finish() {
     state = 'done';
-    feedAll();
-    updateLine(); render(); hud(DURATION); updateSide();
+    feedAll(); rhSample();
+    updateLine(); render(); hud(DURATION); updateSide(); rhDraw();
     setBars(); drawUI();
   }
 
@@ -1331,10 +1534,11 @@ if (!locked()) (function () {
   document.getElementById('zout').addEventListener('click', () => { const [x, y] = toCanvas(cw / 2, ch / 2); zoomAt(x, y, 0.5); requestRender(); });
   document.getElementById('zfit').addEventListener('click', () => { fitView(); renderView(false); });
   selBtn.addEventListener('click', () => {
-    if (selStep > 0) { selStep = 0; selMarks = []; selCands = []; }
+    if (selStep > 0) { selStep = 0; if (!selCurve) { selMarks = []; selCands = []; } }   // done: keep the rings of a found line
     else { selStep = 1; selMarks = []; selCands = []; }
     setBars(); drawUI();
   });
+  selUndoBtn.addEventListener('click', () => { selMarks.pop(); selCands.pop(); if (selCands.length < 2) { sel = null; selCurve = null; selPicks = []; selL.fill(0); sideEl.style.display = 'none'; renderView(false); } refitSelection(); });
   knBtn.addEventListener('click', () => {
     knownMode = knownMode === 'mark' ? 'hide' : knownMode === 'hide' ? 'off' : 'mark';
     knBtn.textContent = 'known: ' + knownMode;
@@ -1369,7 +1573,22 @@ if (!locked()) (function () {
   hudEl.addEventListener('click', () => { hudMini = !hudMini; hudEl.classList.toggle('mini', hudMini); hud(lastEl); });
 
   document.addEventListener('visibilitychange', () => { if (document.hidden && state === 'run') togglePause(); });
-  for (const b of document.querySelectorAll('#modes button')) b.addEventListener('click', () => { mode = b.dataset.mode; goIdle(); });
+  for (const b of document.querySelectorAll('#modes button')) b.addEventListener('click', () => {
+    rh = b.dataset.mode === 'riemann';
+    mode = rh ? 'sacks' : b.dataset.mode;
+    goIdle();
+  });
+  for (const t of rhEl.querySelectorAll('.rht')) t.addEventListener('click', () => { rhTab = t.dataset.tab; rhMinimised = false; rhTabs(); });
+  document.getElementById('rhMin').addEventListener('click', () => { rhMinimised = !rhMinimised; rhTabs(); });
+  document.getElementById('rhFitBand').addEventListener('click', () => { rhFit = 'band'; document.getElementById('rhFitBand').classList.add('on'); document.getElementById('rhFitCurve').classList.remove('on'); rhDraw(); });
+  document.getElementById('rhFitCurve').addEventListener('click', () => { rhFit = 'curve'; document.getElementById('rhFitCurve').classList.add('on'); document.getElementById('rhFitBand').classList.remove('on'); rhDraw(); });
+  const rhK = document.getElementById('rhK'), rhKv = document.getElementById('rhKv');
+  rhK.addEventListener('input', () => { rhKv.textContent = rhK.value; rhDraw(); });
+  document.getElementById('rhPlay').addEventListener('click', () => {
+    const id = ++rhPlayT; rhK.value = 0;
+    const tick = () => { if (id !== rhPlayT) return; rhK.value = Math.min(100, +rhK.value + 1); rhKv.textContent = rhK.value; rhDraw(); if (+rhK.value < 100) setTimeout(tick, 70); };
+    tick();
+  });
   twBtn.addEventListener('click', () => {
     showTwins = !showTwins;
     twBtn.textContent = 'twins: ' + (showTwins ? 'on' : 'off');
@@ -1407,7 +1626,7 @@ if (!locked()) (function () {
   addEventListener('resize', () => { if (state === 'idle') { setup(); reset(); drawUI(); } else relayout(); });
 
   target = goal = 0;
-  renderMineList(); renderFamList();
+  renderMineList(); renderFamList(); rhTabs();
   setup(); reset(); setBars(); drawUI();
 })();
 </script>
